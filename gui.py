@@ -1,6 +1,8 @@
+from typing import List, Any
+
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
-                             QInputDialog, QLabel, QMainWindow, QPushButton, QTabWidget,
+                             QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
                              QTextEdit, QWidget)
 from PyQt5.QtGui import QPainter, QIcon
 from PyQt5.QtCore import pyqtSlot
@@ -13,6 +15,15 @@ import scipy.io as sp
 import numpy as np
 import sys
 import pandas as pd
+import array
+
+
+# canvas initiation
+class MplCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=40, height=20, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = fig.add_subplot(111)
+        super(MplCanvas, self).__init__(fig)
 
 
 # Initializing GUi window and setting size
@@ -54,8 +65,8 @@ class Content(QWidget):
         self.tabs.resize(300, 200)
 
         # Figure to plot on
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
+        self.canvas = MplCanvas(self, width=40, height=20, dpi=100)
+        self.canvas.setParent(self)
 
         # Add tabs
         self.tabs.addTab(self.tab_preprocessing, "Pre-processing")
@@ -94,7 +105,7 @@ class Content(QWidget):
         # Add Groupboxes to second tab
         self.create_select_cs_box()
 
-        #layout for second tab
+        # layout for second tab
         self.tab_train.layout.addWidget(self.select_cs_box, 0, 0)
 
         self.tab_train.setLayout(self.tab_train.layout)
@@ -191,54 +202,65 @@ class Content(QWidget):
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
             self.Interval_inspected = np.array(mat['Interval_inspected'])
-            print(self.RAW)
+            #print(self.RAW)
             #print(self.HIGH)
             #print(Labels)
             #print(Interval_inspected)
-            #dict_keys(['RAW', 'HIGH', 'Labels', 'Interval_inspected'])
-            self.update_plot()
-
             return self.RAW, self.HIGH, self.Labels, self.Interval_inspected
-
 
     # creating canvas and toolbar for second tab
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
         select_cs_layout.setColumnStretch(0, 1)
-        select_cs_layout.setColumnStretch(1, 1)
+        select_cs_layout.setColumnStretch(1, 0)
 
         toolbar = NavigationToolbar(self.canvas, self)
 
         plot_button = QPushButton('Plot')
         plot_button.clicked.connect(self.update_plot)
 
+        labeling_button = QPushButton('Label CS')
+        labeling_button.clicked.connect(self.label_cs)
+
         select_cs_layout.addWidget(toolbar, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
-        select_cs_layout.addWidget(plot_button, 0, 1)
+        select_cs_layout.addWidget(plot_button, 2, 0)
+        select_cs_layout.addWidget(labeling_button, 2, 1)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
     # updating plot for new data?
     def update_plot(self):
-        data = self.RAW
-
-        ax = self.figure.add_subplot(111)
-
-        ax.clear()
-
-        ax.plot(data, '*')
-
+        data = self.RAW[0]
+        print(data)
+        time = np.arange(len(self.RAW[0]))
+        print(time)
+        plt.title("Choose a Timespan for CS Detection")
+        self.canvas.axes.cla()
+        self.canvas.axes.plot(time, data, 'r')
         self.canvas.draw()
-        #plt.plot(np.arange(sampling_rate) / sampling_rate, RAW[0:sampling_rate])
-        #plt.xlabel('time (s)')
-        #plt.show()
 
-# canvas initiation
-class MplCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
+        # plt.plot(np.arange(sampling_rate) / sampling_rate, RAW[0:sampling_rate])
+        # plt.xlabel('time (s)')
+        # plt.show()
+
+    def label_cs(self):
+        x_values = []
+        value_counter = 0
+        while value_counter < 10:
+            x_values[value_counter] = self.canvas.mpl_connect('button_press_event', self.on_press)
+            value_counter += 1
+        else:
+            csselected = QMessageBox.question(self, "all CS chosen?", "Happy with your selected complex spikes? ",
+                                              QMessageBox.Yes | QMessageBox.No)
+            if csselected == QMessageBox.Yes:
+                return x_values
+            elif csselected == QMessageBox.No:
+                x_values.clear()
+                self.label_cs.value_counter = 0
+
+    def on_press(event):
+        return event.LEFT, event.xdata
 
 
 def create():
@@ -246,5 +268,6 @@ def create():
     main = Frame()
     main.show()
     sys.exit(app.exec_())
+
 
 create()
