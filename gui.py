@@ -22,7 +22,8 @@ import array
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=40, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
+        self.axes = fig.add_subplot(211)
+        self.axes2 = fig.add_subplot(212, sharex=self.axes, sharey=self.axes)
         super(MplCanvas, self).__init__(fig)
 
 
@@ -202,10 +203,6 @@ class Content(QWidget):
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
             self.Interval_inspected = np.array(mat['Interval_inspected'])
-            #print(self.RAW)
-            #print(self.HIGH)
-            #print(Labels)
-            #print(Interval_inspected)
             return self.RAW, self.HIGH, self.Labels, self.Interval_inspected
 
     # creating canvas and toolbar for second tab
@@ -217,32 +214,30 @@ class Content(QWidget):
         toolbar = NavigationToolbar(self.canvas, self)
 
         plot_button = QPushButton('Plot')
-        plot_button.clicked.connect(self.update_plot)
+        plot_button.clicked.connect(self.plot_data)
 
         labeling_button = QPushButton('Label CS')
-        labeling_button.clicked.connect(self.label_cs)
+        # labeling_button.clicked.connect(self.label_cs)
 
         select_cs_layout.addWidget(toolbar, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
-        select_cs_layout.addWidget(plot_button, 2, 0)
-        select_cs_layout.addWidget(labeling_button, 2, 1)
+        select_cs_layout.addWidget(plot_button, 0, 1)
+        select_cs_layout.addWidget(labeling_button, 0, 2)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
-    # updating plot for new data?
-    def update_plot(self):
-        data = self.RAW[0]
-        print(data)
+    # updating plot for raw data
+    def plot_data(self):
+        raw_data = self.RAW[0]
+        high_data = self.HIGH[0]
         time = np.arange(len(self.RAW[0]))
-        print(time)
-        plt.title("Choose a Timespan for CS Detection")
+
         self.canvas.axes.cla()
-        self.canvas.axes.plot(time, data, 'r')
+        self.canvas.axes2.cla()
+        self.canvas.axes.plot(time, raw_data, 'r')
+        self.canvas.axes2.plot(time, high_data, 'r')
         self.canvas.draw()
 
-        # plt.plot(np.arange(sampling_rate) / sampling_rate, RAW[0:sampling_rate])
-        # plt.xlabel('time (s)')
-        # plt.show()
 
     def label_cs(self):
         x_values = []
