@@ -8,14 +8,13 @@ from PyQt5.QtGui import QPainter, QIcon
 from PyQt5.QtCore import pyqtSlot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy
 import scipy.io as sp
 import numpy as np
 import sys
-import pandas as pd
-import array
 
 
 # canvas initiation
@@ -50,12 +49,14 @@ class Content(QWidget):
         self.layout = QGridLayout()
         "self.popup_window = QWidget()"
 
-        # Initialize arrays
+        # Initialize arrays and helper values
         self.RAW = []
         self.HIGH = []
         self.Labels = []
         self.Interval_inspected = []
         self.sampling_rate = 25000
+        self.x_values = [[0] * 2 for i in range(10)]
+        self.value_counter = 0
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -189,7 +190,6 @@ class Content(QWidget):
                                            100000, 1000)
         if okPressed:
             self.sampling_rate = i
-            return self.sampling_rate
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -203,7 +203,6 @@ class Content(QWidget):
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
             self.Interval_inspected = np.array(mat['Interval_inspected'])
-            return self.RAW, self.HIGH, self.Labels, self.Interval_inspected
 
     # creating canvas and toolbar for second tab
     def create_select_cs_box(self):
@@ -216,8 +215,8 @@ class Content(QWidget):
         plot_button = QPushButton('Plot')
         plot_button.clicked.connect(self.plot_data)
 
-        labeling_button = QPushButton('Label CS')
-        # labeling_button.clicked.connect(self.label_cs)
+        labeling_button = QPushButton('Select CS')
+        labeling_button.clicked.connect(self.select_cs)
 
         select_cs_layout.addWidget(toolbar, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
@@ -232,30 +231,36 @@ class Content(QWidget):
         high_data = self.HIGH[0]
         time = np.arange(len(self.RAW[0]))
 
+        self.canvas.axes.set_title('select timespan for cs')
+
         self.canvas.axes.cla()
         self.canvas.axes2.cla()
         self.canvas.axes.plot(time, raw_data, 'r')
         self.canvas.axes2.plot(time, high_data, 'r')
         self.canvas.draw()
 
+    def select_cs(self):
+        self.span = SpanSelector(self.canvas.axes, self.onselect, 'horizontal', useblit=True,
+                                 span_stays=True, rectprops=dict(alpha=0.5, facecolor='tab:blue'))
 
-    def label_cs(self):
-        x_values = []
-        value_counter = 0
-        while value_counter < 10:
-            x_values[value_counter] = self.canvas.mpl_connect('button_press_event', self.on_press)
-            value_counter += 1
+    def onselect(self, min_value, max_value):
+        if self.value_counter < 10:
+            self.x_values[self.value_counter][0] = min_value
+            self.x_values[self.value_counter][1] = max_value
+            self.value_counter += 1
+            print(min_value, max_value)
+            print(self.value_counter)
+            self.select_cs()
         else:
-            csselected = QMessageBox.question(self, "all CS chosen?", "Happy with your selected complex spikes? ",
-                                              QMessageBox.Yes | QMessageBox.No)
-            if csselected == QMessageBox.Yes:
-                return x_values
-            elif csselected == QMessageBox.No:
-                x_values.clear()
-                self.label_cs.value_counter = 0
-
-    def on_press(event):
-        return event.LEFT, event.xdata
+            replybox = QMessageBox.question(self, "Are all CS chosen correctly?",
+                                            "Press yes if you are happy and no if you want to restart!",
+                                            QMessageBox.Yes, QMessageBox.No)
+            if replybox == QMessageBox.Yes:
+                print(self.x_values)
+            elif replybox == QMessageBox.No:
+                self.x_values = [[0] * 2 for i in range(10)]
+                self.value_counter = 0
+                self.plot_data()
 
 
 def create():
