@@ -235,8 +235,8 @@ class Content(QWidget):
 
         self.canvas.axes.cla()
         self.canvas.axes2.cla()
-        self.canvas.axes.plot(time, raw_data, 'r')
-        self.canvas.axes2.plot(time, high_data, 'r')
+        self.canvas.axes.plot(time, high_data, 'r')
+        self.canvas.axes2.plot(time, raw_data, 'r')
         self.canvas.draw()
 
     def select_cs(self):
