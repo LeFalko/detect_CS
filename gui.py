@@ -16,8 +16,10 @@ import scipy.io as sp
 import numpy as np
 import sys
 
-
 # canvas initiation
+# from CS import *
+
+
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=40, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -54,6 +56,8 @@ class Content(QWidget):
         self.HIGH = []
         self.Labels = []
         self.Interval_inspected = []
+        self.PC_Number = 10
+        self.PC_Array = [[0]*10 for i in range(self.PC_Number)]
         self.sampling_rate = 25000
         self.x_values = [[0] * 2 for i in range(10)]
         self.value_counter = 0
@@ -132,6 +136,10 @@ class Content(QWidget):
         data_input_layout.setColumnStretch(0, 4)
         data_input_layout.setColumnStretch(1, 4)
 
+        pc_number_button = QPushButton("Choose number of Purkinje cells")
+        pc_number_button.setToolTip('Enter the number of files you want to train the algorithm with')
+        pc_number_button.clicked.connect(self.getPCnumber)
+
         sampling_button = QPushButton("Choose sampling rate")
         sampling_button.setToolTip('Enter your sampling rate')
         sampling_button.clicked.connect(self.getInteger)
@@ -141,11 +149,14 @@ class Content(QWidget):
 
         sampling_label = QLabel("Sampling rate:")
         upload_label = QLabel("Upload Files:")
+        pc_number_label = QLabel("Number of Pc´s")
 
         data_input_layout.addWidget(sampling_label, 0, 0)
         data_input_layout.addWidget(sampling_button, 0, 1)
         data_input_layout.addWidget(upload_label, 1, 0)
         data_input_layout.addWidget(upload_button, 1, 1)
+        data_input_layout.addWidget(pc_number_label, 2, 0)
+        data_input_layout.addWidget(pc_number_button, 2, 1)
 
         self.data_input_box.setLayout(data_input_layout)
 
@@ -175,7 +186,6 @@ class Content(QWidget):
 
         train_button = QPushButton("Create training set")
         train_button.resize(300, 200)
-        # train_button.clicked.connect(self.tab_train)
 
         train_label = QLabel("Train Algorithm by \nmanually detecting \n10 complex spikes")
 
@@ -191,6 +201,13 @@ class Content(QWidget):
         if okPressed:
             self.sampling_rate = i
 
+    def getPCnumber(self):
+        i, okPressed = QInputDialog.getInt(self, "Enter number of Pc´s", "How many different Pc´s?", 10, 0,
+                                           100, 1)
+        if okPressed:
+            self.PC_Number = i
+            self.PC_Array = [[0]*10 for i in range(self.PC_Number)]
+
     # creating file upload dialog
     def openFileNameDialog(self):
         options = QFileDialog.Options()
@@ -198,11 +215,13 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            mat = sp.loadmat(fileName)
+            CS.load_data()
+            # print(LFP,high_pass,Label,Intervs)
+            '''mat = sp.loadmat(fileName)
             self.RAW = np.array(mat['RAW'])
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
-            self.Interval_inspected = np.array(mat['Interval_inspected'])
+            self.Interval_inspected = np.array(mat['Interval_inspected'])'''
 
     # creating canvas and toolbar for second tab
     def create_select_cs_box(self):
@@ -244,6 +263,7 @@ class Content(QWidget):
                                  span_stays=True, rectprops=dict(alpha=0.5, facecolor='tab:blue'))
 
     def onselect(self, min_value, max_value):
+        array_index = 0
         if self.value_counter < 10:
             self.x_values[self.value_counter][0] = min_value
             self.x_values[self.value_counter][1] = max_value
@@ -253,10 +273,14 @@ class Content(QWidget):
             self.select_cs()
         else:
             replybox = QMessageBox.question(self, "Are all CS chosen correctly?",
-                                            "Press yes if you are happy and no if you want to restart!",
+                                            "Press yes to upload next file and no if you want to restart!",
                                             QMessageBox.Yes, QMessageBox.No)
             if replybox == QMessageBox.Yes:
-                print(self.x_values)
+                i = 0
+                if i < 10:
+                    # self.PC_Array[] = self.x_values
+                    i += 1
+
             elif replybox == QMessageBox.No:
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
