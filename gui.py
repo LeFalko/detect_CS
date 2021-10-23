@@ -18,6 +18,7 @@ import sys
 
 # canvas initiation
 # from CS import *
+# from CS import load_data
 
 
 class MplCanvas(FigureCanvas):
@@ -215,13 +216,13 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            CS.load_data()
+            # load_data()
             # print(LFP,high_pass,Label,Intervs)
-            '''mat = sp.loadmat(fileName)
+            mat = sp.loadmat(fileName)
             self.RAW = np.array(mat['RAW'])
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
-            self.Interval_inspected = np.array(mat['Interval_inspected'])'''
+            self.Interval_inspected = np.array(mat['Interval_inspected'])
 
     # creating canvas and toolbar for second tab
     def create_select_cs_box(self):
