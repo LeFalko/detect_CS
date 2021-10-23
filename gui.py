@@ -1,4 +1,4 @@
-from typing import List, Any
+# from typing import List, Any
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
@@ -216,6 +216,8 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
+            #TODO: Implement CS.py methods
+
             # load_data()
             # print(LFP,high_pass,Label,Intervs)
             mat = sp.loadmat(fileName)
@@ -265,6 +267,7 @@ class Content(QWidget):
 
     def onselect(self, min_value, max_value):
         array_index = 0
+        #TODO: Stepback? click to delete last or sth
         if self.value_counter < 10:
             self.x_values[self.value_counter][0] = min_value
             self.x_values[self.value_counter][1] = max_value
