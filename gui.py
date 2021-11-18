@@ -1,5 +1,3 @@
-from typing import List, Any
-
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
                              QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
@@ -11,14 +9,10 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
-import scipy
-import scipy.io as sp
+import scipy as sp
 import numpy as np
 import sys
 
-# canvas initiation
-# from CS import *
-# from CS import load_data
 
 
 class MplCanvas(FigureCanvas):
