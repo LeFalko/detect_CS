@@ -114,6 +114,15 @@ class Content(QWidget):
         # Create third tab
         self.tab_detect.layout = QGridLayout(self)
 
+        # Groupboxes
+        self.detect_cs_box = QGroupBox("Detect complex spikes")
+
+        # Add Groupboxes to third tab
+        self.create_detect_cs_box()
+
+        # layout for second tab
+        self.tab_train.layout.addWidget(self.detect_cs_box, 0, 0)
+
         self.tab_detect.setLayout(self.tab_detect.layout)
 
         # Create last tab
@@ -125,6 +134,7 @@ class Content(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
+    # FUNCTIONS FIRST TAB
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
         data_input_layout = QGridLayout()
@@ -218,6 +228,7 @@ class Content(QWidget):
             self.Labels = np.array(mat['Labels'])
             self.Interval_inspected = np.array(mat['Interval_inspected'])
 
+    # FUNCTIONS SECOND TAB
     # creating canvas and toolbar for second tab
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
@@ -280,6 +291,25 @@ class Content(QWidget):
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
                 self.plot_data()
+
+    # FUNCTIONS THIRD TAB
+    # creating upload for files to detect on and plotting detected spikes third tab
+    def create_detect_cs_box(self):
+        detect_cs_layout = QGridLayout()
+        detect_cs_layout.setColumnStretch(0, 1)
+        detect_cs_layout.setColumnStretch(1, 0)
+
+        detect_upload_button = QPushButton("Upload files to detect on")
+        detect_upload_button.clicked.connect(self.openFileNameDialog)
+
+        labeling_button = QPushButton('Select CS')
+        labeling_button.clicked.connect(self.select_cs)
+
+        detect_cs_layout.addWidget(self.canvas, 1, 0)
+        detect_cs_layout.addWidget(detect_upload_button, 0, 1)
+        detect_cs_layout.addWidget(labeling_button, 0, 2)
+
+        self.select_cs_box.setLayout(detect_cs_layout)
 
 
 def create():
