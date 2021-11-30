@@ -227,6 +227,7 @@ class Content(QWidget):
             self.Interval_inspected = np.array(mat['Interval_inspected'])
 
     # creating canvas and toolbar for second tab
+    # TODO: move boxes to first tab and delete second tab if possible (train network is done in colab)
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
         select_cs_layout.setColumnStretch(0, 1)
@@ -289,6 +290,8 @@ class Content(QWidget):
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
                 self.plot_data()
+
+    #TODO: Create third Tab as well as Functions for detecting cs and uploading files, maybe postprocessing
 
 
 def create():
