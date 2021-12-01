@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+# from typing import List, Any
+
+>>>>>>> master
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
                              QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
@@ -220,6 +225,8 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
+            #TODO: Implement CS.py methods
+
             # load_data()
             # print(LFP,high_pass,Label,Intervs)
             mat = sp.loadmat(fileName)
@@ -230,6 +237,7 @@ class Content(QWidget):
 
     # FUNCTIONS SECOND TAB
     # creating canvas and toolbar for second tab
+    # TODO: move boxes to first tab and delete second tab if possible (train network is done in colab)
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
         select_cs_layout.setColumnStretch(0, 1)
@@ -270,6 +278,7 @@ class Content(QWidget):
 
     def onselect(self, min_value, max_value):
         array_index = 0
+        #TODO: Stepback? click to delete last or sth
         if self.value_counter < 10:
             self.x_values[self.value_counter][0] = min_value
             self.x_values[self.value_counter][1] = max_value
@@ -292,6 +301,7 @@ class Content(QWidget):
                 self.value_counter = 0
                 self.plot_data()
 
+<<<<<<< HEAD
     # FUNCTIONS THIRD TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
@@ -310,6 +320,9 @@ class Content(QWidget):
         detect_cs_layout.addWidget(labeling_button, 0, 2)
 
         self.select_cs_box.setLayout(detect_cs_layout)
+=======
+    #TODO: Create third Tab as well as Functions for detecting cs and uploading files, maybe postprocessing
+>>>>>>> master
 
 
 def create():
