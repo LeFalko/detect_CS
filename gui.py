@@ -1,8 +1,6 @@
-<<<<<<< HEAD
-=======
+
 # from typing import List, Any
 
->>>>>>> master
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
                              QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
@@ -70,13 +68,16 @@ class Content(QWidget):
         self.tab_postprocessing = QWidget()
         self.tabs.resize(300, 200)
 
-        # Figure to plot on
+        # Figures to plot on
         self.canvas = MplCanvas(self, width=40, height=20, dpi=100)
         self.canvas.setParent(self)
 
+        self.canvas2 = MplCanvas(self, width=40, height=20, dpi=100)
+        self.canvas2.setParent(self)
+
         # Add tabs
         self.tabs.addTab(self.tab_preprocessing, "Pre-processing")
-        self.tabs.addTab(self.tab_train, "Train CNN")
+        # self.tabs.addTab(self.tab_train, "Train CNN")
         self.tabs.addTab(self.tab_detect, "Detect CS")
         self.tabs.addTab(self.tab_postprocessing, "Post-processing")
 
@@ -87,13 +88,16 @@ class Content(QWidget):
         self.data_input_box = QGroupBox("Data input")
         self.information_box = QGroupBox("Please note:")
         self.training_set_box = QGroupBox("Train")
+        self.select_cs_box = QGroupBox("Select complex spikes")
 
         # Add groupboxes to first tab
         self.create_data_input_box()
         self.create_information_box()
         self.create_training_set_box()
+        self.create_select_cs_box()
 
         # layout for first tab
+        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 0, 0)
         self.tab_preprocessing.layout.addWidget(self.data_input_box, 1, 0)
         self.tab_preprocessing.layout.addWidget(self.information_box, 0, 1)
         self.tab_preprocessing.layout.addWidget(self.training_set_box, 1, 1)
@@ -102,7 +106,7 @@ class Content(QWidget):
         # self.tab_preprocessing.layout.setRowStretch(0, 4)
         self.tab_preprocessing.setLayout(self.tab_preprocessing.layout)
 
-        # Create second tab
+        '''    # Create second tab
         self.tab_train.layout = QGridLayout(self)
 
         # Groupboxes
@@ -115,7 +119,7 @@ class Content(QWidget):
         self.tab_train.layout.addWidget(self.select_cs_box, 0, 0)
 
         self.tab_train.setLayout(self.tab_train.layout)
-
+        '''
         # Create third tab
         self.tab_detect.layout = QGridLayout(self)
 
@@ -125,8 +129,9 @@ class Content(QWidget):
         # Add Groupboxes to third tab
         self.create_detect_cs_box()
 
-        # layout for second tab
-        self.tab_train.layout.addWidget(self.detect_cs_box, 0, 0)
+        # layout for third tab
+        self.tab_detect.layout.addWidget(self.detect_cs_box, 0, 0)
+        self.tab_detect.layout.setColumnStretch(0, 1)
 
         self.tab_detect.setLayout(self.tab_detect.layout)
 
@@ -240,7 +245,7 @@ class Content(QWidget):
     # TODO: move boxes to first tab and delete second tab if possible (train network is done in colab)
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
-        select_cs_layout.setColumnStretch(0, 1)
+        select_cs_layout.setColumnStretch(0, 0)
         select_cs_layout.setColumnStretch(1, 0)
 
         toolbar = NavigationToolbar(self.canvas, self)
@@ -301,28 +306,31 @@ class Content(QWidget):
                 self.value_counter = 0
                 self.plot_data()
 
-<<<<<<< HEAD
     # FUNCTIONS THIRD TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
         detect_cs_layout = QGridLayout()
-        detect_cs_layout.setColumnStretch(0, 1)
+        detect_cs_layout.setColumnStretch(0, 0)
         detect_cs_layout.setColumnStretch(1, 0)
 
         detect_upload_button = QPushButton("Upload files to detect on")
         detect_upload_button.clicked.connect(self.openFileNameDialog)
 
-        labeling_button = QPushButton('Select CS')
-        labeling_button.clicked.connect(self.select_cs)
+        detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
+        detect_upload_weights_button.clicked.connect(self.openFileNameDialog)
 
-        detect_cs_layout.addWidget(self.canvas, 1, 0)
+        labeling_button = QPushButton('Detect CS')
+        #labeling_button.clicked.connect()
+
+        detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
-        detect_cs_layout.addWidget(labeling_button, 0, 2)
+        detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
+        detect_cs_layout.addWidget(labeling_button, 2, 1)
 
-        self.select_cs_box.setLayout(detect_cs_layout)
-=======
-    #TODO: Create third Tab as well as Functions for detecting cs and uploading files, maybe postprocessing
->>>>>>> master
+        self.detect_cs_box.setLayout(detect_cs_layout)
+
+    #TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
+
 
 
 def create():
