@@ -259,7 +259,7 @@ def detect_CS(weights_name, LFP, High_passed, output_name = None,  sampling_freq
         High_mat = High_passed
     # U'n'Eye
 
-    model = uney.DNN(ks=ks,mp=mp,weights_name=weights_name,sampfreq=sampling_frequency,min_sacc_dur=1,doDiff = False)
+    model = uneye.DNN(ks=ks,mp=mp,weights_name=weights_name,sampfreq=sampling_frequency,min_sacc_dur=1,doDiff = False)
 
     if device.type == 'cpu': # if no GPU, loop through every segments
         Pred = np.zeros((LFP_mat.shape[0],trial_length))
