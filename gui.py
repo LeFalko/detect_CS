@@ -1,12 +1,10 @@
 
 # from typing import List, Any
 
-from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
                              QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
                              QTextEdit, QWidget)
 from PyQt5.QtGui import QPainter, QIcon
-from PyQt5.QtCore import pyqtSlot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
@@ -15,14 +13,18 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 import sys
-
+from CS import load_data, concatenate_segments, norm_LFP, norm_high_pass, butter_bandpass
 
 
 class MplCanvas(FigureCanvas):
-    def __init__(self, parent=None, width=40, height=20, dpi=100):
+    def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(211)
-        self.axes2 = fig.add_subplot(212, sharex=self.axes, sharey=self.axes)
+        self.high_axes = fig.add_subplot(311)
+        self.high_axes.get_xaxis().set_visible(False)
+        self.lfp_axes = fig.add_subplot(312, sharex=self.high_axes, sharey=self.high_axes)
+        self.lfp_axes.get_xaxis().set_visible(False)
+        self.label_axes = fig.add_subplot(313, sharex=self.high_axes, sharey=self.high_axes)
+        self.label_axes.set_xlabel("Time")
         super(MplCanvas, self).__init__(fig)
 
 
@@ -106,30 +108,16 @@ class Content(QWidget):
         # self.tab_preprocessing.layout.setRowStretch(0, 4)
         self.tab_preprocessing.setLayout(self.tab_preprocessing.layout)
 
-        '''    # Create second tab
-        self.tab_train.layout = QGridLayout(self)
-
-        # Groupboxes
-        self.select_cs_box = QGroupBox("Select complex spikes")
-
-        # Add Groupboxes to second tab
-        self.create_select_cs_box()
-
-        # layout for second tab
-        self.tab_train.layout.addWidget(self.select_cs_box, 0, 0)
-
-        self.tab_train.setLayout(self.tab_train.layout)
-        '''
-        # Create third tab
+        # Create second tab
         self.tab_detect.layout = QGridLayout(self)
 
         # Groupboxes
         self.detect_cs_box = QGroupBox("Detect complex spikes")
 
-        # Add Groupboxes to third tab
+        # Add Groupboxes to second tab
         self.create_detect_cs_box()
 
-        # layout for third tab
+        # layout for second tab
         self.tab_detect.layout.addWidget(self.detect_cs_box, 0, 0)
         self.tab_detect.layout.setColumnStretch(0, 1)
 
@@ -145,6 +133,29 @@ class Content(QWidget):
         self.setLayout(self.layout)
 
     # FUNCTIONS FIRST TAB
+
+    # creating canvas and toolbar for first tab
+    def create_select_cs_box(self):
+        select_cs_layout = QGridLayout()
+        select_cs_layout.setColumnStretch(0, 2)
+        select_cs_layout.setColumnStretch(1, 0)
+
+        toolbar = NavigationToolbar(self.canvas, self)
+
+        plot_button = QPushButton('Plot')
+        plot_button.clicked.connect(self.plot_data)
+        plot_button.resize(300, 200)
+
+        labeling_button = QPushButton('Select CS')
+        labeling_button.clicked.connect(self.select_cs)
+
+        select_cs_layout.addWidget(toolbar, 0, 0)
+        select_cs_layout.addWidget(self.canvas, 1, 0)
+        select_cs_layout.addWidget(plot_button, 0, 1)
+        select_cs_layout.addWidget(labeling_button, 0, 2)
+
+        self.select_cs_box.setLayout(select_cs_layout)
+
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
         data_input_layout = QGridLayout()
@@ -230,43 +241,20 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            #TODO: Implement CS.py methods
-
-            # load_data()
-            # print(LFP,high_pass,Label,Intervs)
-            mat = sp.loadmat(fileName)
+            LFP,HIGH,Interval_inspected,Labels = load_data(fileName)
+            print(LFP,HIGH,Interval_inspected,Labels)
+            '''mat = sp.loadmat(fileName)
             self.RAW = np.array(mat['RAW'])
             self.HIGH = np.array(mat['HIGH'])
             self.Labels = np.array(mat['Labels'])
-            self.Interval_inspected = np.array(mat['Interval_inspected'])
-
-    # FUNCTIONS SECOND TAB
-    # creating canvas and toolbar for second tab
-    # TODO: move boxes to first tab and delete second tab if possible (train network is done in colab)
-    def create_select_cs_box(self):
-        select_cs_layout = QGridLayout()
-        select_cs_layout.setColumnStretch(0, 0)
-        select_cs_layout.setColumnStretch(1, 0)
-
-        toolbar = NavigationToolbar(self.canvas, self)
-
-        plot_button = QPushButton('Plot')
-        plot_button.clicked.connect(self.plot_data)
-
-        labeling_button = QPushButton('Select CS')
-        labeling_button.clicked.connect(self.select_cs)
-
-        select_cs_layout.addWidget(toolbar, 0, 0)
-        select_cs_layout.addWidget(self.canvas, 1, 0)
-        select_cs_layout.addWidget(plot_button, 0, 1)
-        select_cs_layout.addWidget(labeling_button, 0, 2)
-
-        self.select_cs_box.setLayout(select_cs_layout)
+            self.Interval_inspected = np.array(mat['Interval_inspected'])'''
 
     # updating plot for raw data
     def plot_data(self):
+        #raw_data = self.LFP
         raw_data = self.RAW[0]
         high_data = self.HIGH[0]
+
         time = np.arange(len(self.RAW[0]))
 
         self.canvas.axes.set_title('select timespan for cs')
@@ -306,7 +294,8 @@ class Content(QWidget):
                 self.value_counter = 0
                 self.plot_data()
 
-    # FUNCTIONS THIRD TAB
+    # FUNCTIONS SECOND TAB
+
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
         detect_cs_layout = QGridLayout()
@@ -314,24 +303,24 @@ class Content(QWidget):
         detect_cs_layout.setColumnStretch(1, 0)
 
         detect_upload_button = QPushButton("Upload files to detect on")
-        detect_upload_button.clicked.connect(self.openFileNameDialog)
+        #detect_upload_button.clicked.connect(self.openFileNameDialog)
 
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
-        detect_upload_weights_button.clicked.connect(self.openFileNameDialog)
+        #detect_upload_weights_button.clicked.connect(self.openFileNameDialog)
 
         labeling_button = QPushButton('Detect CS')
         #labeling_button.clicked.connect()
 
-        detect_cs_layout.addWidget(self.canvas2, 3, 0)
+        # detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
         detect_cs_layout.addWidget(labeling_button, 2, 1)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
 
-    #TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
+    # TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
 
-
+    # FUNCTIONS THIRD TAB
 
 def create():
     app = QApplication(sys.argv)

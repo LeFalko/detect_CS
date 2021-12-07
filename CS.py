@@ -15,7 +15,7 @@ import numpy as np
 import scipy.io as io
 
 # To use the network
-import uneye
+#import uneye
 
 # to get list of files
 from glob import glob as dir
@@ -24,7 +24,7 @@ from glob import glob as dir
 import umap
 
 # to do unsupervised clustering
-import hdbscan
+#import hdbscan
 
 # to plot things
 from matplotlib import pyplot as plt
@@ -144,7 +144,7 @@ def load_data(filename = [],field_LFP = [],field_high_pass = [], field_label = [
         if not(kernel_dies):
             LFP = norm_LFP(LFP,sampling_freq)
         else:
-            temp = [];
+            temp = []
             chunk = 5000000
             n = int(np.ceil(len(LFP)/chunk))
             for i in range(n):
@@ -154,6 +154,7 @@ def load_data(filename = [],field_LFP = [],field_high_pass = [], field_label = [
         high_pass = get_field_mat(data,field_high_pass)
         Label = (get_field_mat(data,field_label))
         Intervs = (get_field_mat(data,field_intervs))
+        print(LFP)
     elif file_extension == '.csv':
 
         LFP = (norm_LFP(np.loadtxt(field_LFP,delimiter=','),sampling_freq))
