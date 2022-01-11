@@ -8,8 +8,8 @@ from PyQt5.QtGui import QPainter, QIcon
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
-import matplotlib
 import matplotlib.pyplot as plt
+# import mat4py as m4p
 import scipy as sp
 import numpy as np
 import sys
@@ -49,7 +49,7 @@ class Content(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QGridLayout()
-        "self.popup_window = QWidget()"
+        self.popup_window = QWidget()
 
         # Initialize arrays and helper values
         self.RAW = []
@@ -240,7 +240,6 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
             mat = sp.loadmat(fileName)
             print(mat)
             self.RAW = np.array(mat['RAW'])
