@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 import sys
-from CS import load_data, concatenate_segments, norm_LFP, norm_high_pass, butter_bandpass
+# from CS import load_data, concatenate_segments, norm_LFP, norm_high_pass, butter_bandpass
 
 
 class MplCanvas(FigureCanvas):
@@ -241,28 +241,36 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            LFP,HIGH,Interval_inspected,Labels = load_data(fileName)
-            print(LFP,HIGH,Interval_inspected,Labels)
-            '''mat = sp.loadmat(fileName)
-            self.RAW = np.array(mat['RAW'])
-            self.HIGH = np.array(mat['HIGH'])
-            self.Labels = np.array(mat['Labels'])
-            self.Interval_inspected = np.array(mat['Interval_inspected'])'''
+            self.upload_data(fileName)
+
+
+
+    def upload_data(self,fileName):
+        #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
+        #print(LFP, HIGH, Interval_inspected, Labels)
+        mat = sp.loadmat(fileName)
+        self.RAW = np.array(mat['RAW'])
+        self.HIGH = np.array(mat['HIGH'])
+        self.Labels = np.array(mat['Labels'])
+        self.Interval_inspected = np.array(mat['Interval_inspected'])
 
     # updating plot for raw data
     def plot_data(self):
         #raw_data = self.LFP
         raw_data = self.RAW[0]
         high_data = self.HIGH[0]
+        labels = self.Labels[0]
 
         time = np.arange(len(self.RAW[0]))
 
         self.canvas.axes.set_title('select timespan for cs')
 
-        self.canvas.axes.cla()
-        self.canvas.axes2.cla()
-        self.canvas.axes.plot(time, high_data, 'r')
-        self.canvas.axes2.plot(time, raw_data, 'r')
+        self.canvas.high_axes.cla()
+        self.canvas.lfp_axes.cla()
+        self.canvas.label_axes.cla()
+        self.canvas.high_axes.plot(time, high_data, 'r')
+        self.canvas.lfp_axes.plot(time, raw_data, 'r')
+        self.canvas.label_axes.plot(time, labels, 'r')
         self.canvas.draw()
 
     def select_cs(self):
