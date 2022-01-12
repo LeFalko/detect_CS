@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
-import scipy as sp
+import scipy.io as sp
 import numpy as np
 import sys
 # from CS import load_data, concatenate_segments, norm_LFP, norm_high_pass, butter_bandpass
@@ -56,8 +56,9 @@ class Content(QWidget):
         self.HIGH = []
         self.Labels = []
         self.Interval_inspected = []
+        self.PC_Counter = 0
         self.PC_Number = 10
-        self.PC_Array = [[0]*10 for i in range(self.PC_Number)]
+        self.PC_Array = [[[0] * 2 for i in range(10)] for j in range(self.PC_Number)]
         self.sampling_rate = 25000
         self.x_values = [[0] * 2 for i in range(10)]
         self.value_counter = 0
@@ -144,7 +145,7 @@ class Content(QWidget):
 
         plot_button = QPushButton('Plot')
         plot_button.clicked.connect(self.plot_data)
-        plot_button.resize(300, 200)
+        # plot_button.resize(300, 200)
 
         labeling_button = QPushButton('Select CS')
         labeling_button.clicked.connect(self.select_cs)
@@ -243,12 +244,11 @@ class Content(QWidget):
         if fileName:
             self.upload_data(fileName)
 
-
-
     def upload_data(self,fileName):
         #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
         #print(LFP, HIGH, Interval_inspected, Labels)
         mat = sp.loadmat(fileName)
+        #print(mat)
         self.RAW = np.array(mat['RAW'])
         self.HIGH = np.array(mat['HIGH'])
         self.Labels = np.array(mat['Labels'])
@@ -260,10 +260,11 @@ class Content(QWidget):
         raw_data = self.RAW[0]
         high_data = self.HIGH[0]
         labels = self.Labels[0]
+        print(raw_data, high_data, labels)
 
         time = np.arange(len(self.RAW[0]))
 
-        self.canvas.axes.set_title('select timespan for cs')
+        # self.canvas.high_axes.set_title('select timespan for cs')
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
@@ -274,8 +275,8 @@ class Content(QWidget):
         self.canvas.draw()
 
     def select_cs(self):
-        self.span = SpanSelector(self.canvas.axes, self.onselect, 'horizontal', useblit=True,
-                                 span_stays=True, rectprops=dict(alpha=0.5, facecolor='tab:blue'))
+        self.span = SpanSelector(self.canvas.high_axes, self.onselect, 'horizontal', useblit=True,
+                                 interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'))
 
     def onselect(self, min_value, max_value):
         array_index = 0
@@ -292,10 +293,10 @@ class Content(QWidget):
                                             "Press yes to upload next file and no if you want to restart!",
                                             QMessageBox.Yes, QMessageBox.No)
             if replybox == QMessageBox.Yes:
-                i = 0
-                if i < 10:
-                    # self.PC_Array[] = self.x_values
-                    i += 1
+                self.PC_Array[self.PC_Counter] = self.x_values
+                self.PC_Counter += 1
+                self.openFileNameDialog()
+
 
             elif replybox == QMessageBox.No:
                 self.x_values = [[0] * 2 for i in range(10)]
