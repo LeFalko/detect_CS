@@ -1,8 +1,8 @@
 
 # from typing import List, Any
 
-from PyQt5.QtWidgets import (QAction, QApplication, QComboBox, QDialog, QFileDialog, QGridLayout, QGroupBox,
-                             QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
+from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QGroupBox,
+                             QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
                              QTextEdit, QWidget)
 from PyQt5.QtGui import QPainter, QIcon
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
@@ -19,12 +19,16 @@ import sys
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
-        self.high_axes = fig.add_subplot(311)
+        self.high_axes = fig.add_subplot(211)
         self.high_axes.get_xaxis().set_visible(False)
-        self.lfp_axes = fig.add_subplot(312, sharex=self.high_axes, sharey=self.high_axes)
-        self.lfp_axes.get_xaxis().set_visible(False)
-        self.label_axes = fig.add_subplot(313, sharex=self.high_axes, sharey=self.high_axes)
-        self.label_axes.set_xlabel("Time")
+        self.high_label_axes = self.high_axes.twinx()
+        self.high_label_axes.set_ylabel('High-pass signal')
+        self.lfp_axes = fig.add_subplot(212, sharex=self.high_axes, sharey=self.high_axes)
+        self.lfp_label_axes = self.lfp_axes.twinx()
+        self.lfp_label_axes.set_ylabel('Low field potential')
+        #self.lfp_label_axes.get_yaxis().set_visible(False)
+        self.lfp_axes.get_xaxis().set_visible(True)
+        self.lfp_axes.set_xlabel('Time')
         super(MplCanvas, self).__init__(fig)
 
 
@@ -36,10 +40,15 @@ class Frame(QMainWindow):
         self.top = 400
         self.width = 1600
         self.height = 900
+        self.setGeometry(self.left, self.top, self.width, self.height)
         self.title = 'CS Detection GUI'
         self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
 
+        '''qtRectangle = self.frameGeometry()
+        centerPoint = QDesktopWidget().availableGeometry().center()
+        qtRectangle.moveCenter(centerPoint)
+        self.move(qtRectangle.topLeft())
+'''
         self.table_widget = Content(self)
         self.setCentralWidget(self.table_widget)
 
@@ -80,7 +89,6 @@ class Content(QWidget):
 
         # Add tabs
         self.tabs.addTab(self.tab_preprocessing, "Pre-processing")
-        # self.tabs.addTab(self.tab_train, "Train CNN")
         self.tabs.addTab(self.tab_detect, "Detect CS")
         self.tabs.addTab(self.tab_postprocessing, "Post-processing")
 
@@ -90,21 +98,20 @@ class Content(QWidget):
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
         self.information_box = QGroupBox("Please note:")
-        self.training_set_box = QGroupBox("Train")
         self.select_cs_box = QGroupBox("Select complex spikes")
 
         # Add groupboxes to first tab
         self.create_data_input_box()
         self.create_information_box()
-        self.create_training_set_box()
         self.create_select_cs_box()
 
         # layout for first tab
-        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 0, 0)
-        self.tab_preprocessing.layout.addWidget(self.data_input_box, 1, 0)
-        self.tab_preprocessing.layout.addWidget(self.information_box, 0, 1)
-        self.tab_preprocessing.layout.addWidget(self.training_set_box, 1, 1)
+        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 1, 0)
+        self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 0)
+        self.tab_preprocessing.layout.addWidget(self.information_box, 1, 1)
         self.tab_preprocessing.layout.setColumnStretch(0, 4)
+        self.tab_preprocessing.layout.setRowStretch(0, 0)
+        self.tab_preprocessing.layout.setRowStretch(1, 4)
 
         # self.tab_preprocessing.layout.setRowStretch(0, 4)
         self.tab_preprocessing.setLayout(self.tab_preprocessing.layout)
@@ -138,52 +145,47 @@ class Content(QWidget):
     # creating canvas and toolbar for first tab
     def create_select_cs_box(self):
         select_cs_layout = QGridLayout()
-        select_cs_layout.setColumnStretch(0, 2)
+        select_cs_layout.setColumnStretch(0, 0)
         select_cs_layout.setColumnStretch(1, 0)
 
         toolbar = NavigationToolbar(self.canvas, self)
-
-        plot_button = QPushButton('Plot')
-        plot_button.clicked.connect(self.plot_data)
-        # plot_button.resize(300, 200)
 
         labeling_button = QPushButton('Select CS')
         labeling_button.clicked.connect(self.select_cs)
 
         select_cs_layout.addWidget(toolbar, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
-        select_cs_layout.addWidget(plot_button, 0, 1)
-        select_cs_layout.addWidget(labeling_button, 0, 2)
+        select_cs_layout.addWidget(labeling_button, 0, 1)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
         data_input_layout = QGridLayout()
-        data_input_layout.setColumnStretch(0, 4)
-        data_input_layout.setColumnStretch(1, 4)
+        #data_input_layout.setColumnStretch(0, 0)
+        #data_input_layout.setSpacing(0)
 
-        pc_number_button = QPushButton("Choose number of Purkinje cells")
+        '''pc_number_button = QPushButton("Choose number of Purkinje cells")
         pc_number_button.setToolTip('Enter the number of files you want to train the algorithm with')
-        pc_number_button.clicked.connect(self.getPCnumber)
+        pc_number_button.clicked.connect(self.getPCnumber)'''
 
-        sampling_button = QPushButton("Choose sampling rate")
-        sampling_button.setToolTip('Enter your sampling rate')
+        sampling_button = QPushButton("Enter sampling rate")
+        sampling_button.setToolTip('Choose your preferred sampling rate')
         sampling_button.clicked.connect(self.getInteger)
 
-        upload_button = QPushButton("Choose PC data for training")
+        upload_button = QPushButton("Choose PC for manual labeling")
+        upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
 
-        sampling_label = QLabel("Sampling rate:")
+        '''sampling_label = QLabel("Sampling rate:")
         upload_label = QLabel("Upload Files:")
-        pc_number_label = QLabel("Number of Pc´s")
+        pc_number_label = QLabel("Number of Pc´s")'''
 
-        data_input_layout.addWidget(sampling_label, 0, 0)
-        data_input_layout.addWidget(sampling_button, 0, 1)
-        data_input_layout.addWidget(upload_label, 1, 0)
-        data_input_layout.addWidget(upload_button, 1, 1)
-        data_input_layout.addWidget(pc_number_label, 2, 0)
-        data_input_layout.addWidget(pc_number_button, 2, 1)
+        data_input_layout.addWidget(sampling_button, 0, 0)
+        data_input_layout.addWidget(upload_button, 0, 1)
+        # data_input_layout.addWidget(pc_number_button, 0, 2)
+
+        #data_input_layout.setContentsMargins(11, 0, 11, 0)
 
         self.data_input_box.setLayout(data_input_layout)
 
@@ -197,7 +199,7 @@ class Content(QWidget):
         textedit.resize(300, 200)
         textedit.setPlainText("Separate files individual PCs (unfiltered raw data) \n"
                               "Name the variables as: \n  - High-Pass: action potentials \n If LFP is available use: "
-                              "\n - Low-Pass: LFP (if not avaialable then extract)\n"
+                              "\n - Low-Pass: LFP (if not available then extract)\n"
                               "Ask for cut-off frequencies: upper cut off and lower cut off, "
                               "sampling rate or use default values (use from our paper)")
 
@@ -206,7 +208,7 @@ class Content(QWidget):
         self.information_box.setLayout(information_layout)
 
     # creating the box in the first tab containing the train button
-    def create_training_set_box(self):
+    '''def create_training_set_box(self):
         create_set_layout = QGridLayout()
         create_set_layout.setColumnStretch(0, 2)
         create_set_layout.setColumnStretch(1, 2)
@@ -219,8 +221,7 @@ class Content(QWidget):
         create_set_layout.addWidget(train_label, 0, 0)
         create_set_layout.addWidget(train_button, 0, 1)
 
-        self.training_set_box.setLayout(create_set_layout)
-
+        self.training_set_box.setLayout(create_set_layout)'''
     # creating sampling input dialog
     def getInteger(self):
         i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
@@ -253,14 +254,14 @@ class Content(QWidget):
         self.HIGH = np.array(mat['HIGH'])
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
+        self.plot_data()
 
     # updating plot for raw data
     def plot_data(self):
         #raw_data = self.LFP
         raw_data = self.RAW[0]
         high_data = self.HIGH[0]
-        labels = self.Labels[0]
-        print(raw_data, high_data, labels)
+        print(raw_data, high_data)
 
         time = np.arange(len(self.RAW[0]))
 
@@ -268,10 +269,8 @@ class Content(QWidget):
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
-        self.canvas.label_axes.cla()
         self.canvas.high_axes.plot(time, high_data, 'r')
         self.canvas.lfp_axes.plot(time, raw_data, 'r')
-        self.canvas.label_axes.plot(time, labels, 'r')
         self.canvas.draw()
 
     def select_cs(self):
