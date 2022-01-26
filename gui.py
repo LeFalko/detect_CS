@@ -29,6 +29,7 @@ class MplCanvas(FigureCanvas):
         #self.lfp_label_axes.get_yaxis().set_visible(False)
         self.lfp_axes.get_xaxis().set_visible(True)
         self.lfp_axes.set_xlabel('Time')
+
         super(MplCanvas, self).__init__(fig)
 
 
@@ -71,6 +72,7 @@ class Content(QWidget):
         self.sampling_rate = 25000
         self.x_values = [[0] * 2 for i in range(10)]
         self.value_counter = 0
+        self.backwardscounter = 9
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -162,8 +164,6 @@ class Content(QWidget):
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
         data_input_layout = QGridLayout()
-        #data_input_layout.setColumnStretch(0, 0)
-        #data_input_layout.setSpacing(0)
 
         '''pc_number_button = QPushButton("Choose number of Purkinje cells")
         pc_number_button.setToolTip('Enter the number of files you want to train the algorithm with')
@@ -184,8 +184,6 @@ class Content(QWidget):
         data_input_layout.addWidget(sampling_button, 0, 0)
         data_input_layout.addWidget(upload_button, 0, 1)
         # data_input_layout.addWidget(pc_number_button, 0, 2)
-
-        #data_input_layout.setContentsMargins(11, 0, 11, 0)
 
         self.data_input_box.setLayout(data_input_layout)
 
@@ -249,11 +247,11 @@ class Content(QWidget):
         #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
         #print(LFP, HIGH, Interval_inspected, Labels)
         mat = sp.loadmat(fileName)
-        #print(mat)
         self.RAW = np.array(mat['RAW'])
         self.HIGH = np.array(mat['HIGH'])
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
+        print(self.Labels)
         self.plot_data()
 
     # updating plot for raw data
@@ -275,11 +273,9 @@ class Content(QWidget):
 
     def select_cs(self):
         self.span = SpanSelector(self.canvas.high_axes, self.onselect, 'horizontal', useblit=True,
-                                 interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'))
+                                 interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'), drag_from_anywhere=True)
 
     def onselect(self, min_value, max_value):
-        array_index = 0
-        #TODO: Stepback? click to delete last or sth
         if self.value_counter < 10:
             self.x_values[self.value_counter][0] = min_value
             self.x_values[self.value_counter][1] = max_value
@@ -294,13 +290,22 @@ class Content(QWidget):
             if replybox == QMessageBox.Yes:
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
-                self.openFileNameDialog()
 
+                self.openFileNameDialog()
 
             elif replybox == QMessageBox.No:
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
                 self.plot_data()
+
+    def delete_last_CS(self):
+        if self.x_values[self.backwardscounter][0] == 0:
+            self.backwardscounter -= 1
+        else:
+            self.x_values[self.backwardscounter][0] = 0
+            self.x_values[self.backwardscounter][1] = 0
+            self.value_counter -= 1
+            return
 
     # FUNCTIONS SECOND TAB
 
