@@ -21,11 +21,9 @@ class MplCanvas(FigureCanvas):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.high_axes = fig.add_subplot(211)
         self.high_axes.get_xaxis().set_visible(False)
-        self.high_label_axes = self.high_axes.twinx()
-        self.high_label_axes.set_ylabel('High-pass signal')
+        self.high_axes.set_ylabel('High-pass signal')
         self.lfp_axes = fig.add_subplot(212, sharex=self.high_axes, sharey=self.high_axes)
-        self.lfp_label_axes = self.lfp_axes.twinx()
-        self.lfp_label_axes.set_ylabel('Low field potential')
+        self.lfp_axes.set_ylabel('Low field potential')
         #self.lfp_label_axes.get_yaxis().set_visible(False)
         self.lfp_axes.get_xaxis().set_visible(True)
         self.lfp_axes.set_xlabel('Time')
@@ -155,9 +153,13 @@ class Content(QWidget):
         labeling_button = QPushButton('Select CS')
         labeling_button.clicked.connect(self.select_cs)
 
+        delete_button = QPushButton('Delete last Selection')
+        delete_button.clicked.connect(self.delete_last_CS)
+
         select_cs_layout.addWidget(toolbar, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
         select_cs_layout.addWidget(labeling_button, 0, 1)
+        select_cs_layout.addWidget(delete_button, 0, 2)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
@@ -251,7 +253,7 @@ class Content(QWidget):
         self.HIGH = np.array(mat['HIGH'])
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
-        print(self.Labels)
+        print(mat)
         self.plot_data()
 
     # updating plot for raw data
@@ -272,8 +274,8 @@ class Content(QWidget):
         self.canvas.draw()
 
     def select_cs(self):
-        self.span = SpanSelector(self.canvas.high_axes, self.onselect, 'horizontal', useblit=True,
-                                 interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'), drag_from_anywhere=True)
+        self.span = SpanSelector(self.canvas.lfp_axes, self.onselect, 'horizontal', useblit=True,
+                                 interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'))
 
     def onselect(self, min_value, max_value):
         if self.value_counter < 10:
@@ -292,6 +294,9 @@ class Content(QWidget):
                 self.PC_Counter += 1
 
                 self.openFileNameDialog()
+                self.x_values = [[0] * 2 for i in range(10)]
+                self.value_counter = 0
+                self.plot_data()
 
             elif replybox == QMessageBox.No:
                 self.x_values = [[0] * 2 for i in range(10)]
@@ -305,7 +310,6 @@ class Content(QWidget):
             self.x_values[self.backwardscounter][0] = 0
             self.x_values[self.backwardscounter][1] = 0
             self.value_counter -= 1
-            return
 
     # FUNCTIONS SECOND TAB
 
