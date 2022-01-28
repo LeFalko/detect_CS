@@ -167,10 +167,6 @@ class Content(QWidget):
     def create_data_input_box(self):
         data_input_layout = QGridLayout()
 
-        '''pc_number_button = QPushButton("Choose number of Purkinje cells")
-        pc_number_button.setToolTip('Enter the number of files you want to train the algorithm with')
-        pc_number_button.clicked.connect(self.getPCnumber)'''
-
         sampling_button = QPushButton("Enter sampling rate")
         sampling_button.setToolTip('Choose your preferred sampling rate')
         sampling_button.clicked.connect(self.getInteger)
@@ -297,7 +293,8 @@ class Content(QWidget):
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
                 with open(self.FileName, 'ab') as f:
-                    sp.savemat(f, {'CSSelected':self.x_values})
+                      sp.savemat(f, {'CSSelected':self.x_values})
+                print(self.FileName)
                 checkmat = sp.loadmat(self.FileName)
                 print(checkmat)
 
