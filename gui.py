@@ -254,7 +254,9 @@ class Content(QWidget):
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
         print(mat)
+        self.FileName = fileName
         self.plot_data()
+
 
     # updating plot for raw data
     def plot_data(self):
@@ -273,10 +275,12 @@ class Content(QWidget):
         self.canvas.lfp_axes.plot(time, raw_data, 'r')
         self.canvas.draw()
 
+    # activates span selection
     def select_cs(self):
         self.span = SpanSelector(self.canvas.lfp_axes, self.onselect, 'horizontal', useblit=True,
                                  interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'))
 
+    # Loop for selecting CS and uploading new file
     def onselect(self, min_value, max_value):
         if self.value_counter < 10:
             self.x_values[self.value_counter][0] = min_value
@@ -292,6 +296,10 @@ class Content(QWidget):
             if replybox == QMessageBox.Yes:
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
+                with open(self.FileName, 'ab') as f:
+                    sp.savemat(f, {'CSSelected':self.x_values})
+                checkmat = sp.loadmat(self.FileName)
+                print(checkmat)
 
                 self.openFileNameDialog()
                 self.x_values = [[0] * 2 for i in range(10)]
@@ -328,7 +336,7 @@ class Content(QWidget):
         labeling_button = QPushButton('Detect CS')
         #labeling_button.clicked.connect()
 
-        # detect_cs_layout.addWidget(self.canvas2, 3, 0)
+        detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
         detect_cs_layout.addWidget(labeling_button, 2, 1)
