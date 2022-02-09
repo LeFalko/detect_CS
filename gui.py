@@ -71,6 +71,8 @@ class Content(QWidget):
         self.x_values = [[0] * 2 for i in range(10)]
         self.value_counter = 0
         self.backwardscounter = 9
+        self.mat_all = np.empty(10, dtype=object)
+        print(self.mat_all)
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -290,13 +292,15 @@ class Content(QWidget):
                                             "Press yes to upload next file and no if you want to restart!",
                                             QMessageBox.Yes, QMessageBox.No)
             if replybox == QMessageBox.Yes:
+                if self.PC_Counter == 10:
+                    sp.savemat("train_data.mat", {'Names': names,
+                                                  'comLFP': compLFP,
+                                                  'compHIGH': compHIGH,
+                                                  'compLabels': compLabels})
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
-                with open(self.FileName, 'ab') as f:
-                      sp.savemat(f, {'CSSelected':self.x_values})
-                print(self.FileName)
-                checkmat = sp.loadmat(self.FileName)
-                print(checkmat)
+                #checkmat = sp.loadmat(self.FileName)
+                #print(checkmat)
 
                 self.openFileNameDialog()
                 self.x_values = [[0] * 2 for i in range(10)]
