@@ -70,9 +70,12 @@ class Content(QWidget):
         self.sampling_rate = 25000
         self.x_values = [[0] * 2 for i in range(10)]
         self.value_counter = 0
-        self.backwardscounter = 9
-        self.mat_all = np.empty(10, dtype=object)
-        print(self.mat_all)
+        self.findlastCS = [9]
+        self.names = []
+        self.compLFP = []
+        self.compHIGH = []
+        self.compLABELS = []
+
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -252,7 +255,7 @@ class Content(QWidget):
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
         print(mat)
-        self.FileName = fileName
+        self.Filename = fileName
         self.plot_data()
 
 
@@ -293,10 +296,13 @@ class Content(QWidget):
                                             QMessageBox.Yes, QMessageBox.No)
             if replybox == QMessageBox.Yes:
                 if self.PC_Counter == 10:
-                    sp.savemat("train_data.mat", {'Names': names,
-                                                  'comLFP': compLFP,
-                                                  'compHIGH': compHIGH,
-                                                  'compLabels': compLabels})
+                    sp.savemat("train_data.mat", {'Names': self.names,
+                                                  'comLFP': self.compLFP,
+                                                  'compHIGH': self.compHIGH,
+                                                  'compLabels': self.compLabels})
+                    mat = sp.loadmat("train_data.mat")
+                    print(mat)
+
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
                 #checkmat = sp.loadmat(self.FileName)
@@ -305,6 +311,9 @@ class Content(QWidget):
                 self.openFileNameDialog()
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
+                self.names.append(self.Filename)
+                self.compLFP.append()
+                self.concatenate_segments()
                 self.plot_data()
 
             elif replybox == QMessageBox.No:
@@ -319,6 +328,20 @@ class Content(QWidget):
             self.x_values[self.backwardscounter][0] = 0
             self.x_values[self.backwardscounter][1] = 0
             self.value_counter -= 1
+
+    def concatenate_segments(self):
+        seg = self.Interval_inspected.copy() == 1
+        starts = np.where(np.concatenate(([0], np.diff(seg) == 1)))[0]
+        ends = np.where(np.concatenate(([0], np.diff(seg) == -1)))[0]
+        if seg[-1] == 1:
+            ends = np.concatenate(ends, len(seg) - 1)
+        for s, e in zip(starts, ends):
+            if sum(self.Labels[s:e]) == 0:
+                seg[s:e] = False
+        self.names.append(self.Filename)
+        self.compLFP.append(self.LFP[seg])
+        self.compHIGH.append(self.HIGH[seg])
+        self.compLabels.append(self.Labels[seg])
 
     # FUNCTIONS SECOND TAB
 
