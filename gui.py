@@ -335,7 +335,7 @@ class Content(QWidget):
             labels[0][self.x_values[i][0]:self.x_values[i][1]] = 1
         self.Labels = labels
 
-    # concatenate cs data in the file
+'''    # concatenate cs data in the file
     def concatenate_segments(self):
 
         starts = np.where(np.concatenate([0], np.diff(seg) == 1))[0]
@@ -350,7 +350,7 @@ class Content(QWidget):
         self.compHIGH.append(self.HIGH[seg])
         self.compLabels.append(self.Labels[seg])
         print(self.names, self.compLFP, self.compHIGH, self.compLABELS)
-
+'''
     # FUNCTIONS SECOND TAB
 
     # creating upload for files to detect on and plotting detected spikes third tab
