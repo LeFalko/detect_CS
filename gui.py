@@ -301,7 +301,7 @@ class Content(QWidget):
                     sp.savemat("train_data.mat", {'Names': self.names,
                                                     'compLFP': self.RAW,
                                                     'compHIGH': self.HIGH,
-                                                    'compLabels': self.Labels})
+                                                    'compLabels': self.Labels}, do_compression = True)
                     mat = sp.loadmat("train_data.mat")
                     print(mat)
 
