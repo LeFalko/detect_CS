@@ -35,8 +35,8 @@ class MplCanvas(FigureCanvas):
 class Frame(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.left = 1000
-        self.top = 400
+        self.left = 500
+        self.top = 200
         self.width = 1600
         self.height = 900
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -66,15 +66,18 @@ class Content(QWidget):
         self.Interval_inspected = []
         self.PC_Counter = 0
         self.PC_Number = 10
+        self.CSNumber = 10
         self.PC_Array = [[[0] * 2 for i in range(10)] for j in range(self.PC_Number)]
         self.sampling_rate = 25000
-        self.x_values = [[0] * 2 for i in range(10)]
+        self.x_values = [[0] * 2 for i in range(self.CSNumber)]
         self.value_counter = 0
+        self.Filename=[]
         self.findlastCS = [9]
         self.names = []
         self.compLFP = []
         self.compHIGH = []
         self.compLABELS = []
+
 
 
         # Initialize tab screen
@@ -230,13 +233,13 @@ class Content(QWidget):
         if okPressed:
             self.sampling_rate = i
 
-    def getPCnumber(self):
+    '''def getPCnumber(self):
         i, okPressed = QInputDialog.getInt(self, "Enter number of Pc´s", "How many different Pc´s?", 10, 0,
                                            100, 1)
         if okPressed:
             self.PC_Number = i
             self.PC_Array = [[0]*10 for i in range(self.PC_Number)]
-
+    '''
     # creating file upload dialog
     def openFileNameDialog(self):
         options = QFileDialog.Options()
@@ -254,21 +257,16 @@ class Content(QWidget):
         self.HIGH = np.array(mat['HIGH'])
         self.Labels = np.array(mat['Labels'])
         self.Interval_inspected = np.array(mat['Interval_inspected'])
-        print(mat)
         self.Filename = fileName
         self.plot_data()
 
-
     # updating plot for raw data
     def plot_data(self):
-        #raw_data = self.LFP
         raw_data = self.RAW[0]
         high_data = self.HIGH[0]
-        print(raw_data, high_data)
+        #print(raw_data, high_data)
 
         time = np.arange(len(self.RAW[0]))
-
-        # self.canvas.high_axes.set_title('select timespan for cs')
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
@@ -283,44 +281,46 @@ class Content(QWidget):
 
     # Loop for selecting CS and uploading new file
     def onselect(self, min_value, max_value):
+        # while under 10 selected CS, assign both values to array x_values
         if self.value_counter < 10:
-            self.x_values[self.value_counter][0] = min_value
-            self.x_values[self.value_counter][1] = max_value
+            self.x_values[self.value_counter][0] = int(min_value)
+            self.x_values[self.value_counter][1] = int(max_value)
             self.value_counter += 1
-            print(min_value, max_value)
+            # print(min_value, max_value)
             print(self.value_counter)
             self.select_cs()
+        # with the 10th CS, show messagebox
         else:
             replybox = QMessageBox.question(self, "Are all CS chosen correctly?",
                                             "Press yes to upload next file and no if you want to restart!",
                                             QMessageBox.Yes, QMessageBox.No)
             if replybox == QMessageBox.Yes:
-                if self.PC_Counter == 10:
+                # if it is the 10th PC, save lists to train_data
+                self.create_labels()
+                if self.PC_Counter == 0:
                     sp.savemat("train_data.mat", {'Names': self.names,
-                                                  'comLFP': self.compLFP,
-                                                  'compHIGH': self.compHIGH,
-                                                  'compLabels': self.compLabels})
+                                                    'compLFP': self.RAW,
+                                                    'compHIGH': self.HIGH,
+                                                    'compLabels': self.Labels})
                     mat = sp.loadmat("train_data.mat")
                     print(mat)
 
+                # if its not the 10th PC: clear values, call concatenate and open new file
                 self.PC_Array[self.PC_Counter] = self.x_values
                 self.PC_Counter += 1
-                #checkmat = sp.loadmat(self.FileName)
-                #print(checkmat)
-
-                self.openFileNameDialog()
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
-                self.names.append(self.Filename)
-                self.compLFP.append()
-                self.concatenate_segments()
+                #self.concatenate_segments()
+                self.openFileNameDialog()
                 self.plot_data()
 
+            # if not happy with CS, reset values and plot again
             elif replybox == QMessageBox.No:
                 self.x_values = [[0] * 2 for i in range(10)]
                 self.value_counter = 0
                 self.plot_data()
 
+    #TODO: implement correct delete last CS function
     def delete_last_CS(self):
         if self.x_values[self.backwardscounter][0] == 0:
             self.backwardscounter -= 1
@@ -329,9 +329,16 @@ class Content(QWidget):
             self.x_values[self.backwardscounter][1] = 0
             self.value_counter -= 1
 
+    def create_labels(self):
+        labels = np.zeros_like(self.RAW)
+        for i in range(self.CSNumber):
+            labels[0][self.x_values[i][0]:self.x_values[i][1]] = 1
+        self.Labels = labels
+
+    # concatenate cs data in the file
     def concatenate_segments(self):
-        seg = self.Interval_inspected.copy() == 1
-        starts = np.where(np.concatenate(([0], np.diff(seg) == 1)))[0]
+
+        starts = np.where(np.concatenate([0], np.diff(seg) == 1))[0]
         ends = np.where(np.concatenate(([0], np.diff(seg) == -1)))[0]
         if seg[-1] == 1:
             ends = np.concatenate(ends, len(seg) - 1)
@@ -339,9 +346,10 @@ class Content(QWidget):
             if sum(self.Labels[s:e]) == 0:
                 seg[s:e] = False
         self.names.append(self.Filename)
-        self.compLFP.append(self.LFP[seg])
+        self.compLFP.append(self.RAW[seg])
         self.compHIGH.append(self.HIGH[seg])
         self.compLabels.append(self.Labels[seg])
+        print(self.names, self.compLFP, self.compHIGH, self.compLABELS)
 
     # FUNCTIONS SECOND TAB
 
