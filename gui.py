@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import scipy.io as sp
 import numpy as np
 import sys
-from CS import detect_CS
+#from CS import detect_CS
 
 
 class MplCanvas(FigureCanvas):
@@ -79,7 +79,7 @@ class Content(QWidget):
         self.compLABELS = []
         self.detect_LFP = []
         self.detect_HIGH = []
-        self.detect_CS = detect_CS
+        #self.detect_CS = detect_CS
 
 
         # Initialize tab screen
@@ -251,7 +251,7 @@ class Content(QWidget):
         if fileName:
             self.upload_data(fileName)
 
-    def upload_data(self,fileName):
+    def upload_data(self, fileName):
         #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
         #print(LFP, HIGH, Interval_inspected, Labels)
         mat = sp.loadmat(fileName)
@@ -261,6 +261,19 @@ class Content(QWidget):
         self.Interval_inspected = np.array(mat['Interval_inspected'])
         self.Filename = fileName
         self.plot_data()
+
+    def saveFileDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "train_data.mat",
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+        if fileName:
+            sp.savemat("train_data.mat", {'Names': self.names,
+                                          'compLFP': self.RAW,
+                                          'compHIGH': self.HIGH,
+                                          'compLabels': self.Labels}, do_compression=True)
+            mat = sp.loadmat("train_data.mat")
+            print(mat)
 
     # updating plot for raw data
     def plot_data(self):
@@ -299,13 +312,9 @@ class Content(QWidget):
             if replybox == QMessageBox.Yes:
                 # if it is the 10th PC, save lists to train_data
                 self.create_labels()
-                if self.PC_Counter == 0:
-                    sp.savemat("train_data.mat", {'Names': self.names,
-                                                    'compLFP': self.RAW,
-                                                    'compHIGH': self.HIGH,
-                                                    'compLabels': self.Labels}, do_compression = True)
-                    mat = sp.loadmat("train_data.mat")
-                    print(mat)
+                if self.PC_Counter == 1:
+                    self.saveFileDialog()
+                    return
 
                 # if its not the 10th PC: clear values, call concatenate and open new file
                 self.PC_Array[self.PC_Counter] = self.x_values
@@ -367,12 +376,12 @@ class Content(QWidget):
         detect_upload_weights_button.clicked.connect(self.upload_weights)
 
         detecting_button = QPushButton('Detect CS')
-        detecting_button.clicked.connect(self.detect_CS(self.detect_LFP, self.detect_HIGH, self.weights))
+        # detecting_button.clicked.connect(self.detect_CS(self.detect_LFP, self.detect_HIGH, self.weights))
 
         #detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
-        detect_cs_layout.addWidget(labeling_button, 2, 1)
+        detect_cs_layout.addWidget(detecting_button, 2, 1)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
 
