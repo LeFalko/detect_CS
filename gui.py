@@ -209,7 +209,12 @@ class Content(QWidget):
                               "Ask for cut-off frequencies: upper cut off and lower cut off, "
                               "sampling rate or use default values (use from our paper)")
 
+        goto_Colab_button = QPushButton("AFTER LABELING: go to colab sheet to train algorithm")
+        goto_Colab_button.setToolTip('Plase finish labeling data before going to the website')
+        goto_Colab_button.clicked.connect(self.open_Colab)
+
         information_layout.addWidget(textedit, 0, 0)
+        information_layout.addWidget(goto_Colab_button, 1, 0)
 
         self.information_box.setLayout(information_layout)
 
@@ -274,6 +279,9 @@ class Content(QWidget):
                                           'compLabels': self.Labels}, do_compression=True)
             mat = sp.loadmat("train_data.mat")
             print(mat)
+
+    def open_Colab(self):
+        self.webbrowser.open('https://colab.research.google.com/github/LeFalko/detect_CS/blob/master/Detect_CS_GUI.ipynb')
 
     # updating plot for raw data
     def plot_data(self):
