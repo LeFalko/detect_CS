@@ -4,7 +4,8 @@
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QGroupBox,
                              QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
                              QTextEdit, QWidget)
-from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtGui import QPainter, QIcon, QDesktopServices
+from PyQt5.QtCore import QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
@@ -281,7 +282,7 @@ class Content(QWidget):
             print(mat)
 
     def open_Colab(self):
-        self.webbrowser.open('https://colab.research.google.com/github/LeFalko/detect_CS/blob/master/Detect_CS_GUI.ipynb')
+        QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
 
     # updating plot for raw data
     def plot_data(self):
