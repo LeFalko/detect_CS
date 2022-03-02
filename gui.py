@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import scipy.io as sp
 import numpy as np
 import sys
-# from CS import load_data, concatenate_segments, norm_LFP, norm_high_pass, butter_bandpass
+from CS import detect_CS
 
 
 class MplCanvas(FigureCanvas):
@@ -71,13 +71,15 @@ class Content(QWidget):
         self.sampling_rate = 25000
         self.x_values = [[0] * 2 for i in range(self.CSNumber)]
         self.value_counter = 0
+        self.backwardscounter = 9
         self.Filename=[]
-        self.findlastCS = [9]
         self.names = []
         self.compLFP = []
         self.compHIGH = []
         self.compLABELS = []
-
+        self.detect_LFP = []
+        self.detect_HIGH = []
+        self.detect_CS = detect_CS
 
 
         # Initialize tab screen
@@ -335,7 +337,7 @@ class Content(QWidget):
             labels[0][self.x_values[i][0]:self.x_values[i][1]] = 1
         self.Labels = labels
 
-'''    # concatenate cs data in the file
+    '''    # concatenate cs data in the file
     def concatenate_segments(self):
 
         starts = np.where(np.concatenate([0], np.diff(seg) == 1))[0]
@@ -350,9 +352,8 @@ class Content(QWidget):
         self.compHIGH.append(self.HIGH[seg])
         self.compLabels.append(self.Labels[seg])
         print(self.names, self.compLFP, self.compHIGH, self.compLABELS)
-'''
+    '''
     # FUNCTIONS SECOND TAB
-
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
         detect_cs_layout = QGridLayout()
@@ -360,20 +361,41 @@ class Content(QWidget):
         detect_cs_layout.setColumnStretch(1, 0)
 
         detect_upload_button = QPushButton("Upload files to detect on")
-        #detect_upload_button.clicked.connect(self.openFileNameDialog)
+        detect_upload_button.clicked.connect(self.upload_detection_file)
 
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
-        #detect_upload_weights_button.clicked.connect(self.openFileNameDialog)
+        detect_upload_weights_button.clicked.connect(self.upload_weights)
 
-        labeling_button = QPushButton('Detect CS')
-        #labeling_button.clicked.connect()
+        detecting_button = QPushButton('Detect CS')
+        detecting_button.clicked.connect(self.detect_CS(self.detect_LFP, self.detect_HIGH, self.weights))
 
-        detect_cs_layout.addWidget(self.canvas2, 3, 0)
+        #detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
         detect_cs_layout.addWidget(labeling_button, 2, 1)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
+
+    # creating file upload dialog
+
+    def upload_detection_file(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+        if fileName:
+            mat = sp.loadmat(fileName)
+            self.detect_LFP = np.array(mat['RAW'])
+            self.detect_HIGH = np.array(mat['HIGH'])
+
+    def upload_weights(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+        if fileName:
+            self.weights = sp.loadmat(fileName)
+
 
     # TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
 
