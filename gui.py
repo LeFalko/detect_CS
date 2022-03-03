@@ -22,9 +22,9 @@ class MplCanvas(FigureCanvas):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.high_axes = fig.add_subplot(211)
         self.high_axes.get_xaxis().set_visible(False)
-        self.high_axes.set_ylabel('High-pass signal')
+        # self.high_axes.set_ylabel('High-pass signal')
         self.lfp_axes = fig.add_subplot(212, sharex=self.high_axes, sharey=self.high_axes)
-        self.lfp_axes.set_ylabel('Low field potential')
+        # self.lfp_axes.set_ylabel('Low field potential')
         #self.lfp_label_axes.get_yaxis().set_visible(False)
         self.lfp_axes.get_xaxis().set_visible(True)
         self.lfp_axes.set_xlabel('Time')
@@ -272,12 +272,14 @@ class Content(QWidget):
         high_data = self.upload_HIGH[0]
         #print(raw_data, high_data)
 
-        time = np.arange(len(self.upload_LFP[0]))
+        time = np.linspace(0, len(self.upload_LFP[0])/self.sampling_rate, len(self.upload_LFP[0]))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
-        self.canvas.high_axes.plot(time, high_data, 'r')
-        self.canvas.lfp_axes.plot(time, raw_data, 'r')
+        self.canvas.high_axes.plot(time, high_data, 'tab:blue', lw=0.4)
+        self.canvas.high_axes.set_ylabel('High-pass signal')
+        self.canvas.lfp_axes.plot(time, raw_data, 'tab:blue', lw=0.4)
+        self.canvas.lfp_axes.set_ylabel('Low field potential')
         self.canvas.draw()
 
     # activates span selection
