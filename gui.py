@@ -48,7 +48,8 @@ class Frame(QMainWindow):
         centerPoint = QDesktopWidget().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
-'''
+        '''
+
         self.table_widget = Content(self)
         self.setCentralWidget(self.table_widget)
 
@@ -61,10 +62,12 @@ class Content(QWidget):
         "self.popup_window = QWidget()"
 
         # Initialize arrays and helper values
-        self.RAW = []
+        self.LFP = []
         self.HIGH = []
         self.Labels = []
         self.Interval_inspected = []
+        self.upload_LFP = []
+        self.upload_HIGH = []
         self.PC_Counter = 0
         self.PC_Number = 10
         self.CSNumber = 10
@@ -73,11 +76,7 @@ class Content(QWidget):
         self.x_values = [[0] * 2 for i in range(self.CSNumber)]
         self.value_counter = 0
         self.backwardscounter = 9
-        self.Filename=[]
-        self.names = []
-        self.compLFP = []
-        self.compHIGH = []
-        self.compLABELS = []
+        self.ID = []
         self.detect_LFP = []
         self.detect_HIGH = []
         #self.detect_CS = detect_CS
@@ -167,10 +166,18 @@ class Content(QWidget):
         delete_button = QPushButton('Delete last Selection')
         delete_button.clicked.connect(self.delete_last_CS)
 
+        next_cell_button = QPushButton('Proceed to next cell')
+        next_cell_button.clicked.connect(self.goto_next_cell)
+
+        save_button = QPushButton('Save your selected CS')
+        save_button.clicked.connect(self.saveFileDialog)
+
         select_cs_layout.addWidget(toolbar, 0, 0)
-        select_cs_layout.addWidget(self.canvas, 1, 0)
+        select_cs_layout.addWidget(self.canvas, 2, 0)
         select_cs_layout.addWidget(labeling_button, 0, 1)
         select_cs_layout.addWidget(delete_button, 0, 2)
+        select_cs_layout.addWidget(next_cell_button, 1, 1)
+        select_cs_layout.addWidget(save_button, 1, 2)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
@@ -185,10 +192,6 @@ class Content(QWidget):
         upload_button = QPushButton("Choose PC for manual labeling")
         upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
-
-        '''sampling_label = QLabel("Sampling rate:")
-        upload_label = QLabel("Upload Files:")
-        pc_number_label = QLabel("Number of Pc´s")'''
 
         data_input_layout.addWidget(sampling_button, 0, 0)
         data_input_layout.addWidget(upload_button, 0, 1)
@@ -219,21 +222,6 @@ class Content(QWidget):
 
         self.information_box.setLayout(information_layout)
 
-    # creating the box in the first tab containing the train button
-    '''def create_training_set_box(self):
-        create_set_layout = QGridLayout()
-        create_set_layout.setColumnStretch(0, 2)
-        create_set_layout.setColumnStretch(1, 2)
-
-        train_button = QPushButton("Create training set")
-        train_button.resize(300, 200)
-
-        train_label = QLabel("Train Algorithm by \nmanually detecting \n10 complex spikes")
-
-        create_set_layout.addWidget(train_label, 0, 0)
-        create_set_layout.addWidget(train_button, 0, 1)
-
-        self.training_set_box.setLayout(create_set_layout)'''
     # creating sampling input dialog
     def getInteger(self):
         i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
@@ -258,14 +246,10 @@ class Content(QWidget):
             self.upload_data(fileName)
 
     def upload_data(self, fileName):
-        #LFP, HIGH, Interval_inspected, Labels = load_data(fileName)
-        #print(LFP, HIGH, Interval_inspected, Labels)
         mat = sp.loadmat(fileName)
-        self.RAW = np.array(mat['RAW'])
-        self.HIGH = np.array(mat['HIGH'])
-        self.Labels = np.array(mat['Labels'])
-        self.Interval_inspected = np.array(mat['Interval_inspected'])
-        self.Filename = fileName
+        self.upload_LFP = np.array(mat['RAW'])
+        self.upload_HIGH = np.array(mat['HIGH'])
+        self.ID = np.append(self.ID, fileName)
         self.plot_data()
 
     def saveFileDialog(self):
@@ -274,23 +258,21 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "train_data.mat",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            sp.savemat("train_data.mat", {'Names': self.names,
-                                          'compLFP': self.RAW,
-                                          'compHIGH': self.HIGH,
-                                          'compLabels': self.Labels}, do_compression=True)
-            mat = sp.loadmat("train_data.mat")
-            print(mat)
+            sp.savemat(fileName, {'ID': self.ID,
+                                  'LFP': self.LFP,
+                                  'HIGH': self.HIGH,
+                                  'Labels': self.Labels}, do_compression=True)
 
     def open_Colab(self):
         QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
 
     # updating plot for raw data
     def plot_data(self):
-        raw_data = self.RAW[0]
-        high_data = self.HIGH[0]
+        raw_data = self.upload_LFP[0]
+        high_data = self.upload_HIGH[0]
         #print(raw_data, high_data)
 
-        time = np.arange(len(self.RAW[0]))
+        time = np.arange(len(self.upload_LFP[0]))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
@@ -306,39 +288,38 @@ class Content(QWidget):
     # Loop for selecting CS and uploading new file
     def onselect(self, min_value, max_value):
         # while under 10 selected CS, assign both values to array x_values
-        if self.value_counter < 10:
+        if self.value_counter < self.CSNumber:
             self.x_values[self.value_counter][0] = int(min_value)
             self.x_values[self.value_counter][1] = int(max_value)
             self.value_counter += 1
-            # print(min_value, max_value)
+            print(min_value, max_value)
             print(self.value_counter)
             self.select_cs()
-        # with the 10th CS, show messagebox
         else:
-            replybox = QMessageBox.question(self, "Are all CS chosen correctly?",
-                                            "Press yes to upload next file and no if you want to restart!",
-                                            QMessageBox.Yes, QMessageBox.No)
-            if replybox == QMessageBox.Yes:
-                # if it is the 10th PC, save lists to train_data
-                self.create_labels()
-                if self.PC_Counter == 1:
-                    self.saveFileDialog()
-                    return
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Maximum amount of CS chosen.")
+            errorbox.setText("Increase Number of CS per Cell or move to the next one!")
+            errorbox.exec_()
 
-                # if its not the 10th PC: clear values, call concatenate and open new file
-                self.PC_Array[self.PC_Counter] = self.x_values
-                self.PC_Counter += 1
-                self.x_values = [[0] * 2 for i in range(10)]
-                self.value_counter = 0
-                #self.concatenate_segments()
-                self.openFileNameDialog()
-                self.plot_data()
+    def goto_next_cell(self):
+        replybox = QMessageBox.question(self, "Are all CS chosen correctly?",
+                                        "Press yes to upload next file and no if you want to restart!",
+                                        QMessageBox.Yes, QMessageBox.No)
+        if replybox == QMessageBox.Yes:
+            self.create_labels()
+            self.LFP = np.append(self.LFP, self.upload_LFP)
+            self.HIGH = np.append(self.HIGH, self.upload_HIGH)
+            self.PC_Array[self.PC_Counter] = self.x_values
+            self.PC_Counter += 1
+            self.x_values = [[0] * 2 for i in range(10)]
+            self.value_counter = 0
+            self.openFileNameDialog()
 
-            # if not happy with CS, reset values and plot again
-            elif replybox == QMessageBox.No:
-                self.x_values = [[0] * 2 for i in range(10)]
-                self.value_counter = 0
-                self.plot_data()
+        # if not happy with CS, reset values and plot again
+        elif replybox == QMessageBox.No:
+            self.x_values = [[0] * 2 for i in range(10)]
+            self.value_counter = 0
+            self.plot_data()
 
     #TODO: implement correct delete last CS function
     def delete_last_CS(self):
@@ -350,27 +331,11 @@ class Content(QWidget):
             self.value_counter -= 1
 
     def create_labels(self):
-        labels = np.zeros_like(self.RAW)
+        labels = np.zeros_like(self.upload_LFP)
         for i in range(self.CSNumber):
             labels[0][self.x_values[i][0]:self.x_values[i][1]] = 1
-        self.Labels = labels
+        self.Labels = np.append(self.Labels, labels)
 
-    '''    # concatenate cs data in the file
-    def concatenate_segments(self):
-
-        starts = np.where(np.concatenate([0], np.diff(seg) == 1))[0]
-        ends = np.where(np.concatenate(([0], np.diff(seg) == -1)))[0]
-        if seg[-1] == 1:
-            ends = np.concatenate(ends, len(seg) - 1)
-        for s, e in zip(starts, ends):
-            if sum(self.Labels[s:e]) == 0:
-                seg[s:e] = False
-        self.names.append(self.Filename)
-        self.compLFP.append(self.RAW[seg])
-        self.compHIGH.append(self.HIGH[seg])
-        self.compLabels.append(self.Labels[seg])
-        print(self.names, self.compLFP, self.compHIGH, self.compLABELS)
-    '''
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
