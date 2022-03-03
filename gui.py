@@ -250,6 +250,8 @@ class Content(QWidget):
         self.upload_LFP = np.array(mat['RAW'])
         self.upload_HIGH = np.array(mat['HIGH'])
         self.ID = np.append(self.ID, fileName)
+        self.LFP.append(self.upload_LFP[0])
+        self.HIGH.append(self.upload_HIGH[0])
         self.plot_data()
 
     def saveFileDialog(self):
@@ -257,8 +259,10 @@ class Content(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "train_data.mat",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
+
         if fileName:
-            sp.savemat(fileName, {'ID': self.ID,
+            self.create_labels()
+            sp.savemat(fileName, {'ID': np.array(self.ID, dtype=object),
                                   'LFP': self.LFP,
                                   'HIGH': self.HIGH,
                                   'Labels': self.Labels}, do_compression=True)
@@ -280,6 +284,7 @@ class Content(QWidget):
         self.canvas.high_axes.set_ylabel('High-pass signal')
         self.canvas.lfp_axes.plot(time, raw_data, 'tab:blue', lw=0.4)
         self.canvas.lfp_axes.set_ylabel('Low field potential')
+        self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.draw()
 
     # activates span selection
@@ -309,8 +314,6 @@ class Content(QWidget):
                                         QMessageBox.Yes, QMessageBox.No)
         if replybox == QMessageBox.Yes:
             self.create_labels()
-            self.LFP = np.append(self.LFP, self.upload_LFP)
-            self.HIGH = np.append(self.HIGH, self.upload_HIGH)
             self.PC_Array[self.PC_Counter] = self.x_values
             self.PC_Counter += 1
             self.x_values = [[0] * 2 for i in range(10)]
@@ -333,10 +336,10 @@ class Content(QWidget):
             self.value_counter -= 1
 
     def create_labels(self):
-        labels = np.zeros_like(self.upload_LFP)
+        labels = np.zeros_like(self.upload_LFP[0])
         for i in range(self.CSNumber):
-            labels[0][self.x_values[i][0]:self.x_values[i][1]] = 1
-        self.Labels = np.append(self.Labels, labels)
+            labels[self.x_values[i][0]:self.x_values[i][1]] = 1
+        self.Labels.append(labels)
 
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
