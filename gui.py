@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import scipy.io as sp
 import numpy as np
 import sys
-#from CS import detect_CS
+from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat
 
 
 class MplCanvas(FigureCanvas):
@@ -79,6 +79,7 @@ class Content(QWidget):
         self.ID = []
         self.detect_LFP = []
         self.detect_HIGH = []
+        self.weights = []
         #self.detect_CS = detect_CS
 
 
@@ -352,7 +353,7 @@ class Content(QWidget):
         detect_upload_weights_button.clicked.connect(self.upload_weights)
 
         detecting_button = QPushButton('Detect CS')
-        # detecting_button.clicked.connect(self.detect_CS(self.detect_LFP, self.detect_HIGH, self.weights))
+        detecting_button.clicked.connect(self.detect_CS_starter)
 
         #detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
@@ -370,8 +371,10 @@ class Content(QWidget):
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             mat = sp.loadmat(fileName)
-            self.detect_LFP = np.array(mat['RAW'])
-            self.detect_HIGH = np.array(mat['HIGH'])
+            self.detect_LFP = get_field_mat(mat,['RAW'])
+            self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
+            self.detect_HIGH = get_field_mat(mat, ['HIGH'])
+            self.detect_HIGH = norm_high_pass(self.detect_HIGH)
 
     def upload_weights(self):
         options = QFileDialog.Options()
@@ -379,9 +382,10 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
-            self.weights = sp.loadmat(fileName)
+            self.weights = fileName
 
-
+    def detect_CS_starter(self):
+        detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
     # TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
 
     # FUNCTIONS THIRD TAB
