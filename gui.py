@@ -15,7 +15,7 @@ import scipy.io as sp
 import numpy as np
 import sys
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat
-
+import uneye
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
@@ -303,6 +303,7 @@ class Content(QWidget):
             print(min_value, max_value)
             print(self.value_counter)
             self.select_cs()
+        # with the 10th CS, show messagebox
         else:
             errorbox = QMessageBox()
             errorbox.setWindowTitle("Maximum amount of CS chosen.")
@@ -389,6 +390,8 @@ class Content(QWidget):
 
     def detect_CS_starter(self):
         detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+
+
     # TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
 
     # FUNCTIONS THIRD TAB

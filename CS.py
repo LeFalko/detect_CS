@@ -5,20 +5,20 @@ import os
 import torch
 
 # to read .mat files
-import mat4py
+#import mat4py
 
 # to read .pkl files
-import pandas as pd
+#import pandas as pd
 
 # to do math operations
 import numpy as np
 import scipy.io as io
 
 # To use the network
-#import uneye
+import uneye
 
 # to get list of files
-from glob import glob as dir
+#from glob import glob as dir
 
 # to do dimensionality reduction
 import umap
