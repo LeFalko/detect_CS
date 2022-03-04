@@ -395,6 +395,7 @@ class Content(QWidget):
 
 def create():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
     main = Frame()
     main.show()
     sys.exit(app.exec_())
