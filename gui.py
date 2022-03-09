@@ -31,6 +31,18 @@ class MplCanvas(FigureCanvas):
 
         super(MplCanvas, self).__init__(fig)
 
+class MplCanvas2(FigureCanvas):
+    def __init__(self, parent=None, width=60, height=20, dpi=100):
+        fig2 = Figure(figsize=(width, height), dpi=dpi)
+        self.clusters = fig2.add_subplot(221)
+        # self.clusters.get_xaxis().set_visible(False)
+        # self.high_axes.set_ylabel('High-pass signal')
+        self.onset = fig2.add_subplot(222)
+        # self.lfp_axes.set_ylabel('Low field potential')
+        self.simple_spikes = fig2.add_subplot(223)
+
+        super(MplCanvas2, self).__init__(fig2)
+
 
 # Initializing GUi window and setting size
 class Frame(QMainWindow):
@@ -95,7 +107,7 @@ class Content(QWidget):
         self.canvas = MplCanvas(self, width=40, height=20, dpi=100)
         self.canvas.setParent(self)
 
-        self.canvas2 = MplCanvas(self, width=40, height=20, dpi=100)
+        self.canvas2 = MplCanvas2(self, width=40, height=20, dpi=100)
         self.canvas2.setParent(self)
 
         # Add tabs
@@ -142,8 +154,20 @@ class Content(QWidget):
 
         self.tab_detect.setLayout(self.tab_detect.layout)
 
-        # Create last tab
+        # Create third tab
         self.tab_postprocessing.layout = QGridLayout(self)
+
+        # Groupboxes
+        self.select_show_data_box = QGroupBox("Select clusters to show")
+        self.cluster_plotting_box = QGroupBox("Plotting")
+
+        # Add Groupboxes to third tab
+        self.create_show_data_box()
+        self.create_cluster_plotting_box()
+
+        # Layout for third tab
+        self.tab_postprocessing.layout.addWidget(self.select_show_data_box, 0, 0)
+        self.tab_postprocessing.layout.addWidget(self.cluster_plotting_box, 0, 1)
 
         self.tab_postprocessing.setLayout(self.tab_postprocessing.layout)
 
@@ -388,13 +412,44 @@ class Content(QWidget):
         if fileName:
             self.weights = fileName
 
+    # TODO: correct detect cs funtion (imports)
     def detect_CS_starter(self):
         detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
 
-
-    # TODO: Create Functions for detecting cs and uploading files, maybe postprocessing
-
     # FUNCTIONS THIRD TAB
+
+    def create_show_data_box(self):
+        show_data_layout = QGridLayout()
+
+        plotting_button = QPushButton('Plot data')
+        plotting_button.clicked.connect(self.plot_detected_data)
+
+        create_cluster_selection_button = QPushButton('Delete last Selection')
+        create_cluster_selection_button.clicked.connect(self.cluster_selection_box)
+
+        show_data_layout.addWidget(plotting_button, 0, 0)
+        show_data_layout.addWidget(create_cluster_selection_button, 1, 0)
+
+        self.select_show_data_box.setLayout(show_data_layout)
+
+    def create_cluster_plotting_box(self):
+        cluster_plotting_layout = QGridLayout()
+
+        toolbar = NavigationToolbar(self.canvas2, self)
+
+        cluster_plotting_layout.addWidget(toolbar, 0, 0)
+        cluster_plotting_layout.addWidget(self.canvas2, 1, 0)
+
+        self.cluster_plotting_box.setLayout(cluster_plotting_layout)
+
+
+    def plot_detected_data(self):
+        return
+        #plotting
+
+    def cluster_selection_box(self):
+        return
+        #create cluster selection
 
 def create():
     app = QApplication(sys.argv)
