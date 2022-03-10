@@ -93,7 +93,7 @@ class Content(QWidget):
         self.detect_HIGH = []
         self.weights = []
         self.output = []
-        self.CS_onseet = []
+        self.CS_onset = []
         self.CS_offset = []
         self.cluster_ID = []
         self.embedding = []
@@ -271,7 +271,7 @@ class Content(QWidget):
     def openFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+        fileName, _ = QFileDialog.getOpenFileName(self, "Upload data", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.upload_data(fileName)
@@ -288,7 +288,7 @@ class Content(QWidget):
     def saveFileDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "train_data.mat",
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save file", "train_data.mat",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
@@ -400,7 +400,7 @@ class Content(QWidget):
     def upload_detection_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+        fileName, _ = QFileDialog.getOpenFileName(self, "Upload files for CS detection", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             mat = sp.loadmat(fileName)
@@ -412,7 +412,7 @@ class Content(QWidget):
     def upload_weights(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+        fileName, _ = QFileDialog.getOpenFileName(self, "Upload weights", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.weights = fileName
@@ -501,18 +501,19 @@ class Content(QWidget):
 
     def plot_detected_data(self):
 
-        cluster_id = self.ClusterID
-        csoffset = self.CS_Offset
-        csonset = self.CS_Onset
+        cluster_ID = self.ClusterID
+        cs_offset = self.CS_Offset
+        cs_onset = self.CS_Onset
         embedding = self.embedding
+        n_clusters = self.n_clusters
 
-        time = 250
+        time = 1000
 
-        #TODO: Different colors for different clusters
+        #TODO: Different colors for different clusters, coorect plotting
         self.canvas2.clusters.cla()
         self.canvas2.onset.cla()
         # self.canvas2.simple_spikes.cla()
-        self.canvas2.clusters.plot(csoffset, csonset, 'tab:blue', lw=0.4)
+        self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         self.canvas2.clusters.set_xlabel('CS clusters')
         self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         self.canvas2.onset.set_xlabel('CS onset')
