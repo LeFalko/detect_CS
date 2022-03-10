@@ -495,6 +495,5 @@ def detect_CS(weights_name, LFP, High_passed, output_name = None,  sampling_freq
     if output_name != None:
         print('saving '+output_name)
         save_data(output_name,labels)
-    print('finished')
     return(labels)
                                                                                                                                                                                                                                                                                                                             

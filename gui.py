@@ -2,8 +2,8 @@
 # from typing import List, Any
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QGroupBox,
-                             QHBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
-                             QTextEdit, QWidget)
+                             QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
+                             QTextEdit, QWidget, QCheckBox)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices
 from PyQt5.QtCore import QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
@@ -92,6 +92,12 @@ class Content(QWidget):
         self.detect_LFP = []
         self.detect_HIGH = []
         self.weights = []
+        self.output = []
+        self.CS_onseet = []
+        self.CS_offset = []
+        self.cluster_ID = []
+        self.embedding = []
+        self.n_clusters = 4
         #self.detect_CS = detect_CS
 
 
@@ -415,8 +421,18 @@ class Content(QWidget):
     # TODO: correct detect cs funtion (imports)
     def detect_CS_starter(self):
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
-        cluster_ID = output['cluster_ID'] 
+        cs_onset = output['cs_onset']
+        cs_offset = output['cs_offset']
+        cluster_ID = output['cluster_ID']                    
+        embedding = output['embedding'] 
         n_clusters = len(np.unique(cluster_ID))
+        
+        self.CS_onset = cs_onset
+        self.CS_offset = cs_offset
+        self.cluster_ID = cluster_ID
+        self.embedding = embedding
+        self.n_clusters = n_clusters
+        
         outputbox = QMessageBox()
         outputbox.setWindowTitle("Complex spikes detected.")
         outputbox.setText("Complex spikes have been detected. \n{} clusters. \nGo to the post-processing tab.".format(n_clusters))
@@ -430,14 +446,50 @@ class Content(QWidget):
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
 
-        create_cluster_selection_button = QPushButton('Delete last Selection')
-        create_cluster_selection_button.clicked.connect(self.cluster_selection_box)
-
+        create_cluster_selection_button = QPushButton('Select CS clusters')
+        
+        select_widget = QWidget()
+        self.checkbox_widget = QWidget()
+        self.checkbox_widget.setStyleSheet('border: 1px solid black;')
+        self.checkbox_layout = QVBoxLayout()
+        self.generate_cluster_list()
+        
+        layout = QVBoxLayout()
+        layout.addWidget(create_cluster_selection_button)
+        layout.addWidget(self.checkbox_widget)
+        layout.addStretch()
+        select_widget.setLayout(layout)
         show_data_layout.addWidget(plotting_button, 0, 0)
-        show_data_layout.addWidget(create_cluster_selection_button, 1, 0)
-
+        show_data_layout.addWidget(select_widget, 1, 0)
+        
         self.select_show_data_box.setLayout(show_data_layout)
-
+        
+        create_cluster_selection_button.clicked.connect(self.add_checkbox)
+    
+    def add_checkbox(self):
+        self.checkbox_widget.setLayout(self.checkbox_layout)
+        
+    def generate_cluster_list(self):
+        self.is_cluster_selected = []
+        self.checkbutton = []
+        for i in range(self.n_clusters):
+            self.checkbutton.append(QCheckBox("Button {}".format(i)))
+            self.is_cluster_selected.append(True)
+            self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
+            self.checkbutton[i].setTristate(False)
+            self.checkbox_layout.addWidget(self.checkbutton[i])
+            self.checkbutton[i].toggled.connect(self.checkbutton_clicked)
+            
+    def checkbutton_clicked(self):
+        self.set_cluster_selected()
+        print(self.is_cluster_selected)
+        
+    def set_cluster_selected(self):
+        n = len(self.checkbutton)
+        for i in range(n):
+            self.is_cluster_selected[i] = self.checkbutton[i].isChecked()
+        
+            
     def create_cluster_plotting_box(self):
         cluster_plotting_layout = QGridLayout()
 
@@ -456,6 +508,8 @@ class Content(QWidget):
     def cluster_selection_box(self):
         return
         #create cluster selection
+
+        
 
 def create():
     app = QApplication(sys.argv)
