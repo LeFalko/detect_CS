@@ -414,7 +414,13 @@ class Content(QWidget):
 
     # TODO: correct detect cs funtion (imports)
     def detect_CS_starter(self):
-        detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+        output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+        cluster_ID = output['cluster_ID'] 
+        n_clusters = len(np.unique(cluster_ID))
+        outputbox = QMessageBox()
+        outputbox.setWindowTitle("Complex spikes detected.")
+        outputbox.setText("Complex spikes have been detected. \n{} clusters. \nGo to the post-processing tab.".format(n_clusters))
+        outputbox.exec_()
 
     # FUNCTIONS THIRD TAB
 
