@@ -389,7 +389,6 @@ class Content(QWidget):
         detecting_button = QPushButton('Detect CS')
         detecting_button.clicked.connect(self.detect_CS_starter)
 
-        #detect_cs_layout.addWidget(self.canvas2, 3, 0)
         detect_cs_layout.addWidget(detect_upload_button, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
         detect_cs_layout.addWidget(detecting_button, 2, 1)
