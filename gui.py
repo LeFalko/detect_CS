@@ -92,6 +92,10 @@ class Content(QWidget):
         self.detect_LFP = []
         self.detect_HIGH = []
         self.weights = []
+        self.ClusterID = []
+        self.CS_Offset = []
+        self.CS_Onset = []
+        self.embedding = []
         #self.detect_CS = detect_CS
 
 
@@ -412,7 +416,6 @@ class Content(QWidget):
         if fileName:
             self.weights = fileName
 
-    # TODO: correct detect cs funtion (imports)
     def detect_CS_starter(self):
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
         cluster_ID = output['cluster_ID'] 
@@ -426,6 +429,9 @@ class Content(QWidget):
 
     def create_show_data_box(self):
         show_data_layout = QGridLayout()
+
+        uploading_button = QPushButton('Upload data to plot')
+        uploading_button.clicked.connect(self.upload_clustering)
 
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
@@ -448,10 +454,39 @@ class Content(QWidget):
 
         self.cluster_plotting_box.setLayout(cluster_plotting_layout)
 
+    def upload_clustering(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+        if fileName:
+            mat = sp.loadmat(fileName)
+            self.ClusterID = np.array(mat['cluster_ID'])
+            self.CS_Offset = np.array(mat['cs_offset'])
+            self.CS_Onset = np.array(mat['cs_onset'])
+            self.embedding = np.array(mat['embedding'])
+
 
     def plot_detected_data(self):
-        return
-        #plotting
+
+        cluster_id = self.ClusterID
+        csoffset = self.CS_Offset
+        csonset = self.CS_Onset
+        embedding = self.embedding
+
+        time = 250
+
+        #TODO: Different colors for different clusters
+        self.canvas2.clusters.cla()
+        self.canvas2.onset.cla()
+        # self.canvas2.simple_spikes.cla()
+        self.canvas2.clusters.plot(csoffset, csonset, 'tab:blue', lw=0.4)
+        self.canvas2.clusters.set_xlabel('CS clusters')
+        self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
+        self.canvas2.onset.set_xlabel('CS onset')
+        # self.canvas2.simple_spikes.plot()
+        # self.canvas2.simple_spikes.set_xlabel('Simple Spikes')
+        self.canvas2.draw()
 
     def cluster_selection_box(self):
         return
