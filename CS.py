@@ -4,9 +4,6 @@ import os
 
 import torch
 
-# to read .mat files
-import mat4py
-
 # to read .pkl files
 import pandas as pd
 

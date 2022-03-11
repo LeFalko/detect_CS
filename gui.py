@@ -9,7 +9,6 @@ from PyQt5.QtCore import QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
-import matplotlib
 import matplotlib.pyplot as plt
 import scipy.io as sp
 import numpy as np
