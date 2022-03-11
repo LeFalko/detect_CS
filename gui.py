@@ -40,7 +40,7 @@ class MplCanvas2(FigureCanvas):
         # self.high_axes.set_ylabel('High-pass signal')
         self.clusters = fig2.add_subplot(222)
         # self.lfp_axes.set_ylabel('Low field potential')
-        self.simple_spikes = fig2.add_subplot(224)
+        self.SS = fig2.add_subplot(224)
 
 
         super(MplCanvas2, self).__init__(fig2)
@@ -76,6 +76,9 @@ class Content(QWidget):
         "self.popup_window = QWidget()"
 
         # Initialize arrays and helper values
+        self.LFP_varname = 'RAW'
+        self.HIGH_varname = 'HIGH'
+        self.SS_varname = 'SS'
         self.LFP = []
         self.HIGH = []
         self.Labels = []
@@ -87,6 +90,7 @@ class Content(QWidget):
         self.CSNumber = 10
         self.PC_Array = [[[0] * 2 for i in range(10)] for j in range(self.PC_Number)]
         self.sampling_rate = 25000
+        self.sampling_rate_SS = 1000
         self.x_values = [[0] * 2 for i in range(self.CSNumber)]
         self.value_counter = 0
         self.backwardscounter = 9
@@ -283,8 +287,10 @@ class Content(QWidget):
 
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
-        self.upload_LFP = np.array(mat['RAW'])
-        self.upload_HIGH = np.array(mat['HIGH'])
+#         self.upload_LFP = np.array(mat['RAW'])
+#         self.upload_HIGH = np.array(mat['HIGH'])
+        self.upload_LFP = np.array(mat[self.LFP_varname])
+        self.upload_HIGH = np.array(mat[self.HIGH_varname])
         self.ID = np.append(self.ID, fileName)
         self.LFP.append(self.upload_LFP[0])
         self.HIGH.append(self.upload_HIGH[0])
@@ -413,6 +419,7 @@ class Content(QWidget):
             self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
             self.detect_HIGH = get_field_mat(mat, ['HIGH'])
             self.detect_HIGH = norm_high_pass(self.detect_HIGH)
+            self.mat = mat
 
     def upload_weights(self):
         options = QFileDialog.Options()
@@ -445,16 +452,19 @@ class Content(QWidget):
             cluster_size[i] =  sum(cluster_ID == clusters[i])
         print(clusters, n_clusters, cluster_size)
         clusters_sorted_idx = np.argsort(cluster_size)[::-1]
+        cluster_size_sorted = np.sort(cluster_size)[::-1]
         for i in range(n_clusters):
             cluster_ID_sorted[cluster_ID==clusters[clusters_sorted_idx[i]]] = i+1
-        print(np.unique(cluster_ID_sorted), clusters)
+        clusters_sorted = np.sort(np.unique(cluster_ID_sorted))
+        print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
         
         self.CS_onset = cs_onset
         self.CS_offset = cs_offset
         self.cluster_ID = cluster_ID_sorted
         self.embedding = embedding
+        self.clusters = clusters_sorted
         self.n_clusters = n_clusters
-        self.cluster_size = cluster_size
+        self.cluster_size = cluster_size_sorted
 
         outputbox = QMessageBox()
         outputbox.setWindowTitle("Complex spikes detected.")
@@ -475,7 +485,7 @@ class Content(QWidget):
                 frag = spikes[alignment[i]-l1:alignment[i]+l2+1]
             spikes_aligned[i, :] = frag
         
-        return spikes_aligned
+        return spikes_aligned       
     
     def create_show_data_box(self):
         show_data_layout = QGridLayout()
@@ -558,9 +568,9 @@ class Content(QWidget):
         self.canvas2.LFP.cla()
         self.canvas2.clusters.cla()
         # self.canvas2.simple_spikes.cla()
-        self.canvas2.onset.cla()
-        self.canvas2.clusters.cla()
-        self.canvas2.onset_lfp.cla()
+        # self.canvas2.onset.cla()
+        # self.canvas2.clusters.cla()
+        # self.canvas2.onset_lfp.cla()
         # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
@@ -593,8 +603,22 @@ class Content(QWidget):
             self.canvas2.LFP.plot(t, lfp_aligned.mean(0), c=self.colors[i], lw=2)
         self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
         self.canvas2.LFP.set_title('LFP')
-                    
-        
+            
+        # plot SS
+        if self.SS_varname:
+            self.ss_train = get_field_mat(self.mat,[self.SS_varname])
+            clusters = np.unique(self.cluster_ID)
+            cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
+            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, 50, 50)
+            offset = 0
+            for i in range(self.n_clusters):
+                # [iy, ix] = np.where(ss_aligned==1)
+                [iy, ix] = np.where(ss_aligned[cluster_ID==clusters[i], :]==True)   
+                self.canvas2.SS.plot(t[ix], iy+offset, '.', c=self.colors[i])
+                offset = offset + (cluster_ID==i+1).sum()
+            self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
+            self.canvas2.SS.set_title('SS')
+            
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
         # self.canvas2.simple_spikes.plot()
