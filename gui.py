@@ -42,6 +42,7 @@ class MplCanvas2(FigureCanvas):
         # self.lfp_axes.set_ylabel('Low field potential')
         self.simple_spikes = fig2.add_subplot(224)
 
+
         super(MplCanvas2, self).__init__(fig2)
 
 
@@ -557,6 +558,9 @@ class Content(QWidget):
         self.canvas2.LFP.cla()
         self.canvas2.clusters.cla()
         # self.canvas2.simple_spikes.cla()
+        self.canvas2.onset.cla()
+        self.canvas2.clusters.cla()
+        self.canvas2.onset_lfp.cla()
         # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
