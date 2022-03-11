@@ -34,12 +34,9 @@ class MplCanvas(FigureCanvas):
 class MplCanvas2(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig2 = Figure(figsize=(width, height), dpi=dpi)
-        self.clusters = fig2.add_subplot(221)
-        # self.clusters.get_xaxis().set_visible(False)
-        # self.high_axes.set_ylabel('High-pass signal')
-        self.onset = fig2.add_subplot(222)
-        # self.lfp_axes.set_ylabel('Low field potential')
-        self.simple_spikes = fig2.add_subplot(223)
+        self.onset = fig2.add_subplot(221)
+        self.clusters = fig2.add_subplot(222)
+        self.onset_lfp = fig2.add_subplot(223)
 
         super(MplCanvas2, self).__init__(fig2)
 
@@ -540,9 +537,9 @@ class Content(QWidget):
         time = 1000
 
         #TODO: Different colors for different clusters, coorect plotting
-        self.canvas2.clusters.cla()
         self.canvas2.onset.cla()
-        # self.canvas2.simple_spikes.cla()
+        self.canvas2.clusters.cla()
+        self.canvas2.onset_lfp.cla()
         # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
@@ -550,8 +547,8 @@ class Content(QWidget):
         self.canvas2.clusters.set_xlabel('CS clusters')
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
-        # self.canvas2.simple_spikes.plot()
-        # self.canvas2.simple_spikes.set_xlabel('Simple Spikes')
+        # self.canvas2.onset_lfp.plot()
+        # self.canvas2.onset_lfp.set_xlabel('Simple Spikes')
         self.canvas2.draw()
 
     def cluster_selection_box(self):
