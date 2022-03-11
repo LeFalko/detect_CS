@@ -475,8 +475,8 @@ class Content(QWidget):
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
-            sp.savemat(fileName, {'CS_onset': self.cs_onset,
-                                  'CS_offset': self.cs_offset,
+            sp.savemat(fileName, {'CS_onset': self.CS_onset,
+                                  'CS_offset': self.CS_offset,
                                   'cluster_ID': self.cluster_ID,
                                   'embedding': self.embedding}, do_compression=True)
     # FUNCTIONS THIRD TAB
@@ -501,6 +501,9 @@ class Content(QWidget):
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
 
+        saving_button = QPushButton('Save selected cluster data')
+        saving_button.clicked.connect(self.save_selected_cluster)
+
         create_cluster_selection_button = QPushButton('Select CS clusters')
 
         select_widget = QWidget()
@@ -514,6 +517,7 @@ class Content(QWidget):
         select_widget.setLayout(layout)
         show_data_layout.addWidget(plotting_button, 0, 0)
         show_data_layout.addWidget(select_widget, 1, 0)
+        show_data_layout.addWidget(saving_button, 2, 0)
 
         self.select_show_data_box.setLayout(show_data_layout)
 
@@ -633,9 +637,26 @@ class Content(QWidget):
         # self.canvas2.simple_spikes.set_xlabel('Simple Spikes')
         self.canvas2.draw()
 
-    def cluster_selection_box(self):
-        return
-        #create cluster selection
+    def save_selected_cluster(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", 'clusters.mat',
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+
+        if fileName:
+            self.get_selected_clusters()
+            sp.savemat(fileName, {'CS_onset': self.CS_onset,
+                                  'CS_offset': self.CS_offset,
+                                  'cluster_ID': self.cluster_ID,
+                                  'embedding': self.embedding}, do_compression=True)
+
+    def get_selected_clusters(self):
+        newarray = []
+        selected_indices = np.where(np.array(self.is_cluster_selected)==True)
+        for i in self.cluster_ID:
+            if self.cluster_ID[i] == selected_indices:
+                newarray.append(self.cluster_ID[i])
+
 
 def create():
     app = QApplication(sys.argv)
