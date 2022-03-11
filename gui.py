@@ -12,6 +12,7 @@ from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
 import scipy.io as sp
+from scipy.ndimage import gaussian_filter1d
 import numpy as np
 import sys
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat
@@ -105,6 +106,7 @@ class Content(QWidget):
         self.embedding = []
         self.n_clusters = []
         self.ss_train = []
+        self.sigma = 5
         self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
                        'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
                        'tab:olive', 'tab:cyan']
@@ -433,6 +435,8 @@ class Content(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload files for CS detection", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
+        self.fileName = fileName.split('.')[-2].split('/')[-1]
+        print(self.fileName)
         if fileName:
             mat = sp.loadmat(fileName)
             self.detect_LFP = get_field_mat(mat,['RAW'])
@@ -502,7 +506,7 @@ class Content(QWidget):
     def savedetectFileDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", 'output.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.fileName+'_output.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
@@ -567,6 +571,7 @@ class Content(QWidget):
         if self.n_clusters:
             for i in range(self.n_clusters):
                 checkbox = QCheckBox("Cluster {} ({})".format(i+1, self.cluster_size[i].astype(int)))
+                checkbox = QCheckBox("Cluster {} (n={})".format(i+1, self.cluster_size[i].astype(int)))
                 checkbox.setStyleSheet('color: C0')
                 self.checkbutton.append(checkbox)
                 self.is_cluster_selected.append(True)
@@ -649,18 +654,30 @@ class Content(QWidget):
             
         # plot SS
         if self.SS_varname:
+            
+            t1_ss = 50
+            t2_ss = 50
+            t_ss = np.arange(-t1_ss, t2_ss, 1000/(self.sampling_rate_SS+1))
             self.ss_train = get_field_mat(self.mat,[self.SS_varname])
             clusters = np.unique(self.cluster_ID)
             cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
-            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, 50, 50)
+            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, t1_ss, t2_ss)
             offset = 0
             for i in range(self.n_clusters):
                 # [iy, ix] = np.where(ss_aligned==1)
                 [iy, ix] = np.where(ss_aligned[cluster_ID==clusters[i], :]==True)   
-                self.canvas2.SS.plot(t[ix], iy+offset, '.', c=self.colors[i])
+                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i])
                 offset = offset + (cluster_ID==i+1).sum()
+            ax2 = self.canvas2.SS.twinx()
+            ss_conv = gaussian_filter1d(ss_aligned, self.sigma, order=0)*1000
+            for i in range(self.n_clusters):
+                ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==clusters[i], :], 0), c=self.colors[i], lw=2)
+            
+            ax2.set_ylabel('SS firing rate [spikes/s]')
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
+            self.canvas2.SS.set_ylabel('CS')
             self.canvas2.SS.set_title('SS')
+            self.canvas2.SS.set_xlim([-t1_ss, t2])
             
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
@@ -671,7 +688,7 @@ class Content(QWidget):
     def save_selected_cluster(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", 'clusters.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.fileName+'_clusters.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
