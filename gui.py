@@ -3,7 +3,7 @@
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QGroupBox,
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
-                             QTextEdit, QWidget, QCheckBox)
+                             QTextEdit, QWidget, QCheckBox, QLineEdit)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices
 from PyQt5.QtCore import QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
@@ -229,13 +229,22 @@ class Content(QWidget):
         sampling_button.setToolTip('Choose your preferred sampling rate')
         sampling_button.clicked.connect(self.getInteger)
 
+        high_pass_button = QPushButton("Enter high pass data name")
+        high_pass_button.setToolTip('Choose your variable name for the high pass data')
+        high_pass_button.clicked.connect(self.getHighPass)
+
+        lfp_button = QPushButton("Enter lfp data name")
+        lfp_button.setToolTip('Choose your variable name for the lfp data')
+        lfp_button.clicked.connect(self.getLFP)
+
         upload_button = QPushButton("Choose PC for manual labeling")
         upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
 
         data_input_layout.addWidget(sampling_button, 0, 0)
-        data_input_layout.addWidget(upload_button, 0, 1)
-        # data_input_layout.addWidget(pc_number_button, 0, 2)
+        data_input_layout.addWidget(high_pass_button, 0, 1)
+        data_input_layout.addWidget(lfp_button, 0, 2)
+        data_input_layout.addWidget(upload_button, 0, 3)
 
         self.data_input_box.setLayout(data_input_layout)
 
@@ -266,16 +275,19 @@ class Content(QWidget):
     def getInteger(self):
         i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
                                            100000, 1000)
-        if okPressed:
+        if okPressed and i > 0:
             self.sampling_rate = i
 
-    '''def getPCnumber(self):
-        i, okPressed = QInputDialog.getInt(self, "Enter number of Pc´s", "How many different Pc´s?", 10, 0,
-                                           100, 1)
-        if okPressed:
-            self.PC_Number = i
-            self.PC_Array = [[0]*10 for i in range(self.PC_Number)]
-    '''
+    def getHighPass(self):
+        text, okPressed = QInputDialog.getText(self, "Enter high pass data name", "Your data:", QLineEdit.Normal, "HIGH")
+        if okPressed and text != '':
+            self.HIGH_varname = text
+
+    def getLFP(self):
+        text, okPressed = QInputDialog.getText(self, "Enter lfp data name", "Your data:", QLineEdit.Normal, "RAW")
+        if okPressed and text != '':
+            self.LFP_varname = text
+
     # creating file upload dialog
     def openFileNameDialog(self):
         options = QFileDialog.Options()
@@ -394,15 +406,23 @@ class Content(QWidget):
         detect_upload_button = QPushButton("Upload files to detect on")
         detect_upload_button.clicked.connect(self.upload_detection_file)
 
+        simple_spike_button = QPushButton("Enter simple spike data name")
+        simple_spike_button.clicked.connect(self.getSimpleSpikes)
+
+        SS_sampling_button = QPushButton("Enter SS sampling rate")
+        SS_sampling_button.clicked.connect(self.getIntegerSS)
+
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
         detect_upload_weights_button.clicked.connect(self.upload_weights)
 
         detecting_button = QPushButton('Detect CS')
         detecting_button.clicked.connect(self.detect_CS_starter)
 
-        detect_cs_layout.addWidget(detect_upload_button, 0, 1)
-        detect_cs_layout.addWidget(detect_upload_weights_button, 1, 1)
-        detect_cs_layout.addWidget(detecting_button, 2, 1)
+        detect_cs_layout.addWidget(detect_upload_button, 0, 0)
+        detect_cs_layout.addWidget(simple_spike_button, 1, 0)
+        detect_cs_layout.addWidget(SS_sampling_button, 2, 0)
+        detect_cs_layout.addWidget(detect_upload_weights_button, 3, 0)
+        detect_cs_layout.addWidget(detecting_button, 4, 0)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
 
@@ -420,6 +440,17 @@ class Content(QWidget):
             self.detect_HIGH = get_field_mat(mat, ['HIGH'])
             self.detect_HIGH = norm_high_pass(self.detect_HIGH)
             self.mat = mat
+
+    def getSimpleSpikes(self):
+        text, okPressed = QInputDialog.getText(self, "Enter simple spike data name", "Your data:", QLineEdit.Normal, "SS")
+        if okPressed and text != '':
+            self.SS_varname = text
+
+    def getIntegerSS(self):
+        i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 1000, 0,
+                                           10000, 100)
+        if okPressed and i > 0:
+            self.sampling_rate_SS = i
 
     def upload_weights(self):
         options = QFileDialog.Options()
