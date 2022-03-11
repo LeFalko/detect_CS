@@ -34,12 +34,13 @@ class MplCanvas(FigureCanvas):
 class MplCanvas2(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig2 = Figure(figsize=(width, height), dpi=dpi)
-        self.clusters = fig2.add_subplot(221)
+        self.CS = fig2.add_subplot(221)
+        self.LFP = fig2.add_subplot(223)
         # self.clusters.get_xaxis().set_visible(False)
         # self.high_axes.set_ylabel('High-pass signal')
-        self.onset = fig2.add_subplot(222)
+        self.clusters = fig2.add_subplot(222)
         # self.lfp_axes.set_ylabel('Low field potential')
-        self.simple_spikes = fig2.add_subplot(223)
+        self.simple_spikes = fig2.add_subplot(224)
 
         super(MplCanvas2, self).__init__(fig2)
 
@@ -98,11 +99,11 @@ class Content(QWidget):
         self.cluster_ID = []
         self.embedding = []
         self.n_clusters = []
+        self.ss_train = []
         self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
                        'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
                        'tab:olive', 'tab:cyan']
-        #self.detect_CS = detect_CS
-
+        # [#1f77b4ff]
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -442,9 +443,9 @@ class Content(QWidget):
         for i in range(n_clusters):
             cluster_size[i] =  sum(cluster_ID == clusters[i])
         print(clusters, n_clusters, cluster_size)
-        clusters_sorted = np.sort(clusters)[::-1]
+        clusters_sorted_idx = np.argsort(cluster_size)[::-1]
         for i in range(n_clusters):
-            cluster_ID_sorted[cluster_ID==clusters[i]] = i+1
+            cluster_ID_sorted[cluster_ID==clusters[clusters_sorted_idx[i]]] = i+1
         print(np.unique(cluster_ID_sorted), clusters)
         
         self.CS_onset = cs_onset
@@ -460,7 +461,21 @@ class Content(QWidget):
         outputbox.exec_()
 
     # FUNCTIONS THIRD TAB
-
+    
+    def align_spikes(self, spikes, alignment, l1=300, l2=300):
+        N = len(alignment)
+        spikes_aligned = np.zeros([N, l1+l2+1]) * np.nan
+        for i in range(N):
+            if alignment[i] - l1 < 0:
+                frag = np.hstack([np.zeros([l1-alignment[i]+1])*np.nan, spikes[0:alignment[i]+l2]])
+            elif alignment[i]+l2+1 > spikes.shape[0]:
+                frag = np.hstack([spikes[alignment[i]-l1:-1], np.zeros(alignment[i]+l2+2-self.ss_train.shape[0])*np.nan])
+            else:
+                frag = spikes[alignment[i]-l1:alignment[i]+l2+1]
+            spikes_aligned[i, :] = frag
+        
+        return spikes_aligned
+    
     def create_show_data_box(self):
         show_data_layout = QGridLayout()
 
@@ -472,8 +487,6 @@ class Content(QWidget):
         select_widget = QWidget()
         self.checkbox_widget = QWidget()
         self.checkbox_widget.setStyleSheet('border: 1px solid black;')
-        # self.checkbox_layout = QVBoxLayout()
-        # self.generate_cluster_list()
 
         layout = QVBoxLayout()
         layout.addWidget(create_cluster_selection_button)
@@ -500,7 +513,7 @@ class Content(QWidget):
         if self.n_clusters:
             for i in range(self.n_clusters):
                 checkbox = QCheckBox("Cluster {} ({})".format(i+1, self.cluster_size[i].astype(int)))
-                checkbox.setStyleSheet('color: tab:red')
+                checkbox.setStyleSheet('color: C0')
                 self.checkbutton.append(checkbox)
                 self.is_cluster_selected.append(True)
                 self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
@@ -540,14 +553,44 @@ class Content(QWidget):
         time = 1000
 
         #TODO: Different colors for different clusters, coorect plotting
+        self.canvas2.CS.cla()
+        self.canvas2.LFP.cla()
         self.canvas2.clusters.cla()
-        self.canvas2.onset.cla()
         # self.canvas2.simple_spikes.cla()
         # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.clusters.scatter(embedding[idx,0], embedding[idx,1],  c=self.colors[i])
-        self.canvas2.clusters.set_xlabel('CS clusters')
+            self.canvas2.clusters.scatter(embedding[idx,0], embedding[idx,1],  c=self.colors[i], linewidth=None)
+        self.canvas2.clusters.set_xlabel('Dimension 1')
+        self.canvas2.clusters.set_ylabel('Dimension 2')
+        self.canvas2.clusters.set_title('CS clusters')
+        
+        t1 = 5
+        t2 = 20
+        t = np.arange(-t1, t2, 1000/(self.sampling_rate+1))
+        # plot CS
+        cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
+        for i in range(self.n_clusters):
+            idx = cluster_ID == i+1
+            self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=self.colors[i], lw=0.4)
+        for i in range(self.n_clusters):
+            idx = cluster_ID == i+1
+            self.canvas2.CS.plot(t, cs_aligned.mean(0), c=self.colors[i], lw=2)
+        self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
+        self.canvas2.CS.set_title('CS')
+        
+        # plot LFP
+        lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
+        for i in range(self.n_clusters):
+            idx = cluster_ID == i+1
+            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=self.colors[i], lw=0.4)
+        for i in range(self.n_clusters):
+            idx = cluster_ID == i+1
+            self.canvas2.LFP.plot(t, lfp_aligned.mean(0), c=self.colors[i], lw=2)
+        self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
+        self.canvas2.LFP.set_title('LFP')
+                    
+        
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
         # self.canvas2.simple_spikes.plot()
