@@ -645,17 +645,18 @@ class Content(QWidget):
 
         if fileName:
             self.get_selected_clusters()
-            sp.savemat(fileName, {'CS_onset': self.CS_onset,
-                                  'CS_offset': self.CS_offset,
-                                  'cluster_ID': self.cluster_ID,
-                                  'embedding': self.embedding}, do_compression=True)
+            sp.savemat(fileName, {'CS_onset': self.save_CS_onset,
+                                  'CS_offset': self.save_CS_offset,
+                                  'cluster_ID': self.save_cluster_ID,
+                                  'embedding': self.save_embedding}, do_compression=True)
 
     def get_selected_clusters(self):
-        newarray = []
         selected_indices = np.where(np.array(self.is_cluster_selected)==True)
-        for i in self.cluster_ID:
-            if self.cluster_ID[i] == selected_indices:
-                newarray.append(self.cluster_ID[i])
+        self.save_cluster_ID = self.cluster_ID[self.clusters[selected_indices]]
+        self.save_CS_onset = self.save_CS_onset[self.clusters[selected_indices]]
+        self.save_CS_offset = self.save_CS_offset[self.clusters[selected_indices]]
+        self.save_embedding = self.save_embedding[self.clusters[selected_indices]]
+
 
 
 def create():
