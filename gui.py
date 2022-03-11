@@ -97,7 +97,10 @@ class Content(QWidget):
         self.CS_offset = []
         self.cluster_ID = []
         self.embedding = []
-        self.n_clusters = 4
+        self.n_clusters = []
+        self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
+                       'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
+                       'tab:olive', 'tab:cyan']
         #self.detect_CS = detect_CS
 
 
@@ -418,18 +421,38 @@ class Content(QWidget):
             self.weights = fileName
 
     def detect_CS_starter(self):
+        runningbox = QMessageBox()
+        runningbox.setWindowTitle("Running")
+        runningbox.setText("Detecting complex spikes....")
+        runningbox.exec_()
+        
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+        runningbox.done(1)
+        
         cs_onset = output['cs_onset']
         cs_offset = output['cs_offset']
         cluster_ID = output['cluster_ID']
         embedding = output['embedding']
-        n_clusters = len(np.unique(cluster_ID))
-
+        
+        # sort clusters by cluster size
+        clusters = np.unique(cluster_ID)
+        n_clusters = len(clusters)
+        cluster_size = np.zeros(n_clusters)
+        cluster_ID_sorted = np.zeros_like(cluster_ID)
+        for i in range(n_clusters):
+            cluster_size[i] =  sum(cluster_ID == clusters[i])
+        print(clusters, n_clusters, cluster_size)
+        clusters_sorted = np.sort(clusters)[::-1]
+        for i in range(n_clusters):
+            cluster_ID_sorted[cluster_ID==clusters[i]] = i+1
+        print(np.unique(cluster_ID_sorted), clusters)
+        
         self.CS_onset = cs_onset
         self.CS_offset = cs_offset
-        self.cluster_ID = cluster_ID
+        self.cluster_ID = cluster_ID_sorted
         self.embedding = embedding
         self.n_clusters = n_clusters
+        self.cluster_size = cluster_size
 
         outputbox = QMessageBox()
         outputbox.setWindowTitle("Complex spikes detected.")
@@ -449,8 +472,8 @@ class Content(QWidget):
         select_widget = QWidget()
         self.checkbox_widget = QWidget()
         self.checkbox_widget.setStyleSheet('border: 1px solid black;')
-        self.checkbox_layout = QVBoxLayout()
-        self.generate_cluster_list()
+        # self.checkbox_layout = QVBoxLayout()
+        # self.generate_cluster_list()
 
         layout = QVBoxLayout()
         layout.addWidget(create_cluster_selection_button)
@@ -462,21 +485,28 @@ class Content(QWidget):
 
         self.select_show_data_box.setLayout(show_data_layout)
 
-        create_cluster_selection_button.clicked.connect(self.add_checkbox)
+        create_cluster_selection_button.clicked.connect(self.generate_cluster_list)
 
     def add_checkbox(self):
+        
         self.checkbox_widget.setLayout(self.checkbox_layout)
 
     def generate_cluster_list(self):
         self.is_cluster_selected = []
         self.checkbutton = []
-        for i in range(self.n_clusters):
-            self.checkbutton.append(QCheckBox("Button {}".format(i)))
-            self.is_cluster_selected.append(True)
-            self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
-            self.checkbutton[i].setTristate(False)
-            self.checkbox_layout.addWidget(self.checkbutton[i])
-            self.checkbutton[i].toggled.connect(self.checkbutton_clicked)
+        self.checkbox_layout = QVBoxLayout()
+        self.add_checkbox()
+        print(self.n_clusters)
+        if self.n_clusters:
+            for i in range(self.n_clusters):
+                checkbox = QCheckBox("Cluster {} ({})".format(i+1, self.cluster_size[i].astype(int)))
+                checkbox.setStyleSheet('color: tab:red')
+                self.checkbutton.append(checkbox)
+                self.is_cluster_selected.append(True)
+                self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
+                self.checkbutton[i].setTristate(False)
+                self.checkbox_layout.addWidget(self.checkbutton[i])
+                self.checkbutton[i].toggled.connect(self.checkbutton_clicked)
 
     def checkbutton_clicked(self):
         self.set_cluster_selected()
@@ -501,9 +531,9 @@ class Content(QWidget):
 
     def plot_detected_data(self):
 
-        cluster_ID = self.ClusterID
-        cs_offset = self.CS_Offset
-        cs_onset = self.CS_Onset
+        cluster_ID = self.cluster_ID
+        cs_offset = self.CS_offset
+        cs_onset = self.CS_onset
         embedding = self.embedding
         n_clusters = self.n_clusters
 
@@ -513,10 +543,13 @@ class Content(QWidget):
         self.canvas2.clusters.cla()
         self.canvas2.onset.cla()
         # self.canvas2.simple_spikes.cla()
-        self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
+        # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
+        for i in range(self.n_clusters):
+            idx = cluster_ID == i+1
+            self.canvas2.clusters.scatter(embedding[idx,0], embedding[idx,1],  c=self.colors[i])
         self.canvas2.clusters.set_xlabel('CS clusters')
-        self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
-        self.canvas2.onset.set_xlabel('CS onset')
+        # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
+        # self.canvas2.onset.set_xlabel('CS onset')
         # self.canvas2.simple_spikes.plot()
         # self.canvas2.simple_spikes.set_xlabel('Simple Spikes')
         self.canvas2.draw()
