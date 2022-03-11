@@ -456,11 +456,19 @@ class Content(QWidget):
         self.n_clusters = n_clusters
         self.cluster_size = cluster_size
 
-        outputbox = QMessageBox()
-        outputbox.setWindowTitle("Complex spikes detected.")
-        outputbox.setText("Complex spikes have been detected. \n{} clusters. \nGo to the post-processing tab.".format(n_clusters))
-        outputbox.exec_()
+        self.savedetectFileDialog()
 
+    def savedetectFileDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", 'output.mat',
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+
+        if fileName:
+            sp.savemat(fileName, {'CS_onset': self.cs_onset,
+                                  'CS_offset': self.cs_offset,
+                                  'cluster_ID': self.cluster_ID,
+                                  'embedding': self.embedding}, do_compression=True)
     # FUNCTIONS THIRD TAB
     
     def align_spikes(self, spikes, alignment, l1=300, l2=300):
