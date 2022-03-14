@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.colors as mplcolors
 import scipy.io as sp
 from scipy.ndimage import gaussian_filter1d
 import numpy as np
@@ -39,7 +40,7 @@ class MplCanvas2(FigureCanvas):
         self.LFP = fig2.add_subplot(223)
         # self.clusters.get_xaxis().set_visible(False)
         # self.high_axes.set_ylabel('High-pass signal')
-        self.clusters = fig2.add_subplot(222)
+        self.CS_clusters = fig2.add_subplot(222)
         # self.lfp_axes.set_ylabel('Low field potential')
         self.SS = fig2.add_subplot(224)
 
@@ -107,10 +108,11 @@ class Content(QWidget):
         self.n_clusters = []
         self.ss_train = []
         self.sigma = 5
-        self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
-                       'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
-                       'tab:olive', 'tab:cyan']
-        # [#1f77b4ff]
+        # self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
+        #                'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
+        #                'tab:olive', 'tab:cyan']
+        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+                       '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -235,8 +237,8 @@ class Content(QWidget):
         high_pass_button.setToolTip('Choose your variable name for the high pass data')
         high_pass_button.clicked.connect(self.getHighPass)
 
-        lfp_button = QPushButton("Enter lfp data name")
-        lfp_button.setToolTip('Choose your variable name for the lfp data')
+        lfp_button = QPushButton("Enter LFP data name")
+        lfp_button.setToolTip('Choose your variable name for the LFP data')
         lfp_button.clicked.connect(self.getLFP)
 
         upload_button = QPushButton("Choose PC for manual labeling")
@@ -264,7 +266,7 @@ class Content(QWidget):
                               "Ask for cut-off frequencies: upper cut off and lower cut off, "
                               "sampling rate or use default values (use from our paper)")
 
-        goto_Colab_button = QPushButton("AFTER LABELING: go to colab sheet to train algorithm")
+        goto_Colab_button = QPushButton("AFTER LABELING: go to colab sheet to TRAIN ALGORITHM")
         goto_Colab_button.setToolTip('Plase finish labeling data before going to the website')
         goto_Colab_button.clicked.connect(self.open_Colab)
 
@@ -324,8 +326,8 @@ class Content(QWidget):
                                   'Labels': self.Labels}, do_compression=True)
 
     def open_Colab(self):
-        QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
-
+        # QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
+        QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1WenM8VYNQSxknWoSlv7wqimavASXvo50?authuser=5#scrollTo=wZ0-3PDAz5qr'))
     # updating plot for raw data
     def plot_data(self):
         raw_data = self.upload_LFP[0]
@@ -345,7 +347,7 @@ class Content(QWidget):
 
     # activates span selection
     def select_cs(self):
-        self.span = SpanSelector(self.canvas.lfp_axes, self.onselect, 'horizontal', useblit=True,
+        self.span = SpanSelector(self.canvas.high_axes, self.onselect, 'horizontal', useblit=True,
                                  interactive=True, props=dict(alpha=0.5, facecolor='tab:blue'))
 
     # Loop for selecting CS and uploading new file
@@ -405,10 +407,10 @@ class Content(QWidget):
         detect_cs_layout.setColumnStretch(0, 0)
         detect_cs_layout.setColumnStretch(1, 0)
 
-        detect_upload_button = QPushButton("Upload files to detect on")
+        detect_upload_button = QPushButton("Upload a PC recording")
         detect_upload_button.clicked.connect(self.upload_detection_file)
 
-        simple_spike_button = QPushButton("Enter simple spike data name")
+        simple_spike_button = QPushButton("Enter SS data name")
         simple_spike_button.clicked.connect(self.getSimpleSpikes)
 
         SS_sampling_button = QPushButton("Enter SS sampling rate")
@@ -435,6 +437,7 @@ class Content(QWidget):
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload files for CS detection", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
+        print(fileName)
         self.fileName = fileName.split('.')[-2].split('/')[-1]
         print(self.fileName)
         if fileName:
@@ -553,6 +556,7 @@ class Content(QWidget):
         show_data_layout.addWidget(plotting_button, 0, 0)
         show_data_layout.addWidget(select_widget, 1, 0)
         show_data_layout.addWidget(saving_button, 2, 0)
+        layout.addStretch()
 
         self.select_show_data_box.setLayout(show_data_layout)
 
@@ -570,9 +574,9 @@ class Content(QWidget):
         print(self.n_clusters)
         if self.n_clusters:
             for i in range(self.n_clusters):
-                checkbox = QCheckBox("Cluster {} ({})".format(i+1, self.cluster_size[i].astype(int)))
                 checkbox = QCheckBox("Cluster {} (n={})".format(i+1, self.cluster_size[i].astype(int)))
-                checkbox.setStyleSheet('color: C0')
+                textcolor = 'color: ' + self.colors[i]
+                checkbox.setStyleSheet(textcolor)
                 self.checkbutton.append(checkbox)
                 self.is_cluster_selected.append(True)
                 self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
@@ -614,7 +618,7 @@ class Content(QWidget):
         #TODO: Different colors for different clusters, coorect plotting
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
-        self.canvas2.clusters.cla()
+        self.canvas2.CS_clusters.cla()
         # self.canvas2.simple_spikes.cla()
         # self.canvas2.onset.cla()
         # self.canvas2.clusters.cla()
@@ -622,22 +626,25 @@ class Content(QWidget):
         # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.clusters.scatter(embedding[idx,0], embedding[idx,1],  c=self.colors[i], linewidth=None)
-        self.canvas2.clusters.set_xlabel('Dimension 1')
-        self.canvas2.clusters.set_ylabel('Dimension 2')
-        self.canvas2.clusters.set_title('CS clusters')
+            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i])
+        self.canvas2.CS_clusters.set_xlabel('Dimension 1')
+        self.canvas2.CS_clusters.set_ylabel('Dimension 2')
+        self.canvas2.CS_clusters.set_title('CS clusters')
         
         t1 = 5
         t2 = 20
         t = np.arange(-t1, t2, 1000/(self.sampling_rate+1))
+        p = 0.6
+        wht = np.array([1., 1., 1., 1.])
         # plot CS
         cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=self.colors[i], lw=0.4)
+            color = mplcolors.to_rgba_array(self.colors[i])
+            self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.CS.plot(t, cs_aligned.mean(0), c=self.colors[i], lw=2)
+            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
         self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
         self.canvas2.CS.set_title('CS')
         
@@ -645,10 +652,11 @@ class Content(QWidget):
         lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=self.colors[i], lw=0.4)
+            color = mplcolors.to_rgba_array(self.colors[i])
+            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
-            self.canvas2.LFP.plot(t, lfp_aligned.mean(0), c=self.colors[i], lw=2)
+            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
         self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
         self.canvas2.LFP.set_title('LFP')
             
@@ -677,7 +685,7 @@ class Content(QWidget):
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
             self.canvas2.SS.set_ylabel('CS')
             self.canvas2.SS.set_title('SS')
-            self.canvas2.SS.set_xlim([-t1_ss, t2])
+            self.canvas2.SS.set_xlim([-t1_ss, t2_ss])
             
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
@@ -697,13 +705,18 @@ class Content(QWidget):
                                   'CS_offset': self.save_CS_offset,
                                   'cluster_ID': self.save_cluster_ID,
                                   'embedding': self.save_embedding}, do_compression=True)
+            print(fileName + ' saved')
 
     def get_selected_clusters(self):
-        selected_indices = np.where(np.array(self.is_cluster_selected)==True)
-        self.save_cluster_ID = self.cluster_ID[self.clusters[selected_indices]]
-        self.save_CS_onset = self.save_CS_onset[self.clusters[selected_indices]]
-        self.save_CS_offset = self.save_CS_offset[self.clusters[selected_indices]]
-        self.save_embedding = self.save_embedding[self.clusters[selected_indices]]
+        # selected_clusters = np.where(np.array(self.is_cluster_selected)==True)
+        selected_clusters = self.clusters[np.where(np.array(self.is_cluster_selected)==True)]
+        selected_indices = np.where(np.isin(np.array(self.cluster_ID), selected_clusters))
+        print(selected_clusters)
+        print(selected_indices)
+        self.save_cluster_ID = self.cluster_ID[selected_indices]
+        self.save_CS_onset = self.CS_onset[selected_indices]
+        self.save_CS_offset = self.CS_offset[selected_indices]
+        self.save_embedding = self.embedding[selected_indices, :].squeeze()
 
 
 
