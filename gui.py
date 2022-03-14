@@ -1,11 +1,11 @@
 
 # from typing import List, Any
 
-from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QFileDialog, QGridLayout, QGroupBox,
+from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
                              QTextEdit, QWidget, QCheckBox, QLineEdit)
-from PyQt5.QtGui import QPainter, QIcon, QDesktopServices
-from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
+from PyQt5.QtCore import QUrl, QSize
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
@@ -24,10 +24,7 @@ class MplCanvas(FigureCanvas):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.high_axes = fig.add_subplot(211)
         self.high_axes.get_xaxis().set_visible(False)
-        # self.high_axes.set_ylabel('High-pass signal')
         self.lfp_axes = fig.add_subplot(212, sharex=self.high_axes, sharey=self.high_axes)
-        # self.lfp_axes.set_ylabel('Low field potential')
-        #self.lfp_label_axes.get_yaxis().set_visible(False)
         self.lfp_axes.get_xaxis().set_visible(True)
         self.lfp_axes.set_xlabel('Time')
 
@@ -60,11 +57,10 @@ class Frame(QMainWindow):
         self.title = 'CS Detection GUI'
         self.setWindowTitle(self.title)
 
-        '''qtRectangle = self.frameGeometry()
+        qtRectangle = self.frameGeometry()
         centerPoint = QDesktopWidget().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
-        '''
 
         self.table_widget = Content(self)
         self.setCentralWidget(self.table_widget)
@@ -108,9 +104,8 @@ class Content(QWidget):
         self.n_clusters = []
         self.ss_train = []
         self.sigma = 5
-        # self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 
-        #                'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 
-        #                'tab:olive', 'tab:cyan']
+        # self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 
+        #                'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
@@ -141,16 +136,23 @@ class Content(QWidget):
         self.data_input_box = QGroupBox("Data input")
         self.information_box = QGroupBox("Please note:")
         self.select_cs_box = QGroupBox("Select complex spikes")
+        self.after_labeling_box = QGroupBox("After labeling")
 
         # Add groupboxes to first tab
         self.create_data_input_box()
         self.create_information_box()
         self.create_select_cs_box()
+        self.create_after_labeling_box()
 
         # layout for first tab
+        right_panel = QWidget()
+        layout = QGridLayout()
+        layout.addWidget(self.information_box, 0, 0)
+        layout.addWidget(self.after_labeling_box, 1, 0)
+        right_panel.setLayout(layout)
         self.tab_preprocessing.layout.addWidget(self.select_cs_box, 1, 0)
         self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 0)
-        self.tab_preprocessing.layout.addWidget(self.information_box, 1, 1)
+        self.tab_preprocessing.layout.addWidget(right_panel, 1, 1)
         self.tab_preprocessing.layout.setColumnStretch(0, 4)
         self.tab_preprocessing.layout.setRowStretch(0, 0)
         self.tab_preprocessing.layout.setRowStretch(1, 4)
@@ -201,8 +203,17 @@ class Content(QWidget):
         select_cs_layout = QGridLayout()
         select_cs_layout.setColumnStretch(0, 0)
         select_cs_layout.setColumnStretch(1, 0)
+        
+        widget1 = QWidget()
+        layout1 = QGridLayout()
+        
 
         toolbar = NavigationToolbar(self.canvas, self)
+        
+        layout1.addWidget(toolbar, 0, 0)
+        
+        widget2 = QWidget()
+        layout2 = QGridLayout()
 
         labeling_button = QPushButton('Select CS')
         labeling_button.clicked.connect(self.select_cs)
@@ -215,48 +226,57 @@ class Content(QWidget):
 
         save_button = QPushButton('Save your selected CS')
         save_button.clicked.connect(self.saveFileDialog)
+        
+        layout2.addWidget(labeling_button, 0,0)
+        layout2.addWidget(delete_button, 0,1)
+        layout2.addWidget(next_cell_button, 1,0)
+        layout2.addWidget(save_button, 1,1)
+        widget2.setLayout(layout2)
+        
+        layout1.addWidget(widget2, 0, 1)
+        widget1.setLayout(layout1)
 
-        select_cs_layout.addWidget(toolbar, 0, 0)
+        select_cs_layout.addWidget(widget1, 0, 0)
         select_cs_layout.addWidget(self.canvas, 2, 0)
-        select_cs_layout.addWidget(labeling_button, 0, 1)
-        select_cs_layout.addWidget(delete_button, 0, 2)
-        select_cs_layout.addWidget(next_cell_button, 1, 1)
-        select_cs_layout.addWidget(save_button, 1, 2)
 
         self.select_cs_box.setLayout(select_cs_layout)
 
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
-        data_input_layout = QGridLayout()
-
-        sampling_button = QPushButton("Enter sampling rate")
-        sampling_button.setToolTip('Choose your preferred sampling rate')
-        sampling_button.clicked.connect(self.getInteger)
-
-        high_pass_button = QPushButton("Enter high pass data name")
-        high_pass_button.setToolTip('Choose your variable name for the high pass data')
-        high_pass_button.clicked.connect(self.getHighPass)
-
-        lfp_button = QPushButton("Enter LFP data name")
-        lfp_button.setToolTip('Choose your variable name for the LFP data')
-        lfp_button.clicked.connect(self.getLFP)
-
+        data_input_layout = QHBoxLayout()
+        
         upload_button = QPushButton("Choose PC for manual labeling")
         upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
+        
+        setting_button = QPushButton("Setting")
+        setting_button.clicked.connect(self.open_setting_box)
 
-        data_input_layout.addWidget(sampling_button, 0, 0)
-        data_input_layout.addWidget(high_pass_button, 0, 1)
-        data_input_layout.addWidget(lfp_button, 0, 2)
-        data_input_layout.addWidget(upload_button, 0, 3)
+        data_input_layout.addWidget(setting_button)
+        data_input_layout.addWidget(upload_button)
+        data_input_layout.addStretch()
 
         self.data_input_box.setLayout(data_input_layout)
 
     # creating the box in the first tab containing user information
+    def open_setting_box(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("Setting")
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.close)
+        layout = QFormLayout()
+        layout.addRow(QLabel("Sampling rate [Hz]"), self.setSamplingRate())
+        layout.addRow(QLabel("High pass AP variable name"), self.setHighVarname())
+        layout.addRow(QLabel("LFP variable name"), self.setLFPVarname())
+        layout.addRow(ok_button)
+        dialog.setLayout(layout)
+        dialog.exec_()
+        dialog.show()
+    
     def create_information_box(self):
-        information_layout = QGridLayout()
-        information_layout.setColumnStretch(1, 1)
-        information_layout.setRowStretch(1, 1)
+        information_layout = QVBoxLayout()
+        # information_layout.setColumnStretch(1, 1)
+        # information_layout.setRowStretch(1, 1)
 
         textedit = QTextEdit()
         textedit.resize(300, 200)
@@ -266,31 +286,64 @@ class Content(QWidget):
                               "Ask for cut-off frequencies: upper cut off and lower cut off, "
                               "sampling rate or use default values (use from our paper)")
 
-        goto_Colab_button = QPushButton("AFTER LABELING: go to colab sheet to TRAIN ALGORITHM")
-        goto_Colab_button.setToolTip('Plase finish labeling data before going to the website')
-        goto_Colab_button.clicked.connect(self.open_Colab)
-
-        information_layout.addWidget(textedit, 0, 0)
-        information_layout.addWidget(goto_Colab_button, 1, 0)
+        
+        information_layout.addWidget(textedit)
+        information_layout.addStretch()
 
         self.information_box.setLayout(information_layout)
-
+        
+    def create_after_labeling_box(self):
+        after_labeling_layout = QHBoxLayout()
+        
+        goto_Colab_button = QPushButton("TRAIN ALGORITHM")
+        goto_Colab_button.setToolTip('Plase finish labeling data before going to the website')
+        goto_Colab_button.clicked.connect(self.open_Colab)
+        goto_Colab_button.setIcon(QIcon(('./img/colab_logo.png')))
+        
+        after_labeling_layout.addWidget(goto_Colab_button)
+        
+        self.after_labeling_box.setLayout(after_labeling_layout)
+    
+    # creating input for setting parameters
+    def setSamplingRate(self):
+        def changeSamplingRate():
+            self.sampling_rate = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1000, 100000)
+        spinbox.setValue(self.sampling_rate)
+        spinbox.valueChanged.connect(changeSamplingRate)
+        return spinbox
+    
+    def setHighVarname(self):
+        def changeText():
+            self.HIGH_varname = lineedit.text()
+        lineedit = QLineEdit(self.HIGH_varname)
+        lineedit.textChanged.connect(changeText)
+        return lineedit
+    
+    def setLFPVarname(self):
+        def changeText():
+            self.LFP_varname = lineedit.text()
+        lineedit = QLineEdit(self.LFP_varname)
+        lineedit.textChanged.connect(changeText)
+        return lineedit
+    
     # creating sampling input dialog
-    def getInteger(self):
-        i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
-                                           100000, 1000)
-        if okPressed and i > 0:
-            self.sampling_rate = i
+    # def getInteger(self):
+    #     i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
+    #                                        100000, 1000)
+    #     if okPressed and i > 0:
+    #         self.sampling_rate = i
 
-    def getHighPass(self):
-        text, okPressed = QInputDialog.getText(self, "Enter high pass data name", "Your data:", QLineEdit.Normal, "HIGH")
-        if okPressed and text != '':
-            self.HIGH_varname = text
+    # def getHighPass(self):
+    #     text, okPressed = QInputDialog.getText(self, "Enter high pass data name", "Your data:", QLineEdit.Normal, "HIGH")
+    #     if okPressed and text != '':
+    #         self.HIGH_varname = text
 
-    def getLFP(self):
-        text, okPressed = QInputDialog.getText(self, "Enter lfp data name", "Your data:", QLineEdit.Normal, "RAW")
-        if okPressed and text != '':
-            self.LFP_varname = text
+    # def getLFP(self):
+    #     text, okPressed = QInputDialog.getText(self, "Enter lfp data name", "Your data:", QLineEdit.Normal, "RAW")
+    #     if okPressed and text != '':
+    #         self.LFP_varname = text
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -303,8 +356,6 @@ class Content(QWidget):
 
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
-#         self.upload_LFP = np.array(mat['RAW'])
-#         self.upload_HIGH = np.array(mat['HIGH'])
         self.upload_LFP = np.array(mat[self.LFP_varname])
         self.upload_HIGH = np.array(mat[self.HIGH_varname])
         self.ID = np.append(self.ID, fileName)
@@ -328,19 +379,20 @@ class Content(QWidget):
     def open_Colab(self):
         # QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
         QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1WenM8VYNQSxknWoSlv7wqimavASXvo50?authuser=5#scrollTo=wZ0-3PDAz5qr'))
+    
     # updating plot for raw data
     def plot_data(self):
         raw_data = self.upload_LFP[0]
         high_data = self.upload_HIGH[0]
         #print(raw_data, high_data)
 
-        time = np.linspace(0, len(self.upload_LFP[0])/self.sampling_rate, len(self.upload_LFP[0]))
+        t = np.linspace(0, len(self.upload_LFP[0])/self.sampling_rate, len(self.upload_LFP[0]))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
-        self.canvas.high_axes.plot(time, high_data, 'tab:blue', lw=0.4)
+        self.canvas.high_axes.plot(t, high_data, 'tab:blue', lw=0.4)
         self.canvas.high_axes.set_ylabel('High-pass signal')
-        self.canvas.lfp_axes.plot(time, raw_data, 'tab:blue', lw=0.4)
+        self.canvas.lfp_axes.plot(t, raw_data, 'tab:blue', lw=0.4)
         self.canvas.lfp_axes.set_ylabel('Low field potential')
         self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.draw()
@@ -534,7 +586,8 @@ class Content(QWidget):
         return spikes_aligned       
     
     def create_show_data_box(self):
-        show_data_layout = QGridLayout()
+        # show_data_layout = QGridLayout()
+        show_data_layout = QVBoxLayout()
 
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
@@ -552,11 +605,15 @@ class Content(QWidget):
         layout.addWidget(create_cluster_selection_button)
         layout.addWidget(self.checkbox_widget)
         layout.addStretch()
+        
         select_widget.setLayout(layout)
-        show_data_layout.addWidget(plotting_button, 0, 0)
-        show_data_layout.addWidget(select_widget, 1, 0)
-        show_data_layout.addWidget(saving_button, 2, 0)
-        layout.addStretch()
+        # show_data_layout.addWidget(plotting_button, 0, 0)
+        # show_data_layout.addWidget(select_widget, 1, 0)
+        # show_data_layout.addWidget(saving_button, 2, 0)
+        show_data_layout.addWidget(plotting_button)
+        show_data_layout.addWidget(select_widget)
+        show_data_layout.addWidget(saving_button)
+        show_data_layout.addStretch()
 
         self.select_show_data_box.setLayout(show_data_layout)
 
@@ -619,18 +676,15 @@ class Content(QWidget):
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
         self.canvas2.CS_clusters.cla()
-        # self.canvas2.simple_spikes.cla()
-        # self.canvas2.onset.cla()
-        # self.canvas2.clusters.cla()
-        # self.canvas2.onset_lfp.cla()
-        # self.canvas2.clusters.plot(cs_offset, cs_onset, 'tab:blue', lw=0.4)
+
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
             self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i])
         self.canvas2.CS_clusters.set_xlabel('Dimension 1')
         self.canvas2.CS_clusters.set_ylabel('Dimension 2')
-        self.canvas2.CS_clusters.set_title('CS clusters')
-        
+        self.canvas2.CS_clusters.set_title('CS clusters', loc='left')
+        # self.canvas2.CS_clusters.get_xaxis().set_ticks([])
+
         t1 = 5
         t2 = 20
         t = np.arange(-t1, t2, 1000/(self.sampling_rate+1))
@@ -646,7 +700,8 @@ class Content(QWidget):
             idx = cluster_ID == i+1
             self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
         self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
-        self.canvas2.CS.set_title('CS')
+        self.canvas2.CS.set_title('CS', loc='left')
+        self.canvas2.CS.get_xaxis().set_ticks([])
         
         # plot LFP
         lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
@@ -658,7 +713,7 @@ class Content(QWidget):
             idx = cluster_ID == i+1
             self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
         self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
-        self.canvas2.LFP.set_title('LFP')
+        self.canvas2.LFP.set_title('LFP', loc='left')
             
         # plot SS
         if self.SS_varname:
@@ -684,7 +739,7 @@ class Content(QWidget):
             ax2.set_ylabel('SS firing rate [spikes/s]')
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
             self.canvas2.SS.set_ylabel('CS')
-            self.canvas2.SS.set_title('SS')
+            self.canvas2.SS.set_title('SS', loc='left')
             self.canvas2.SS.set_xlim([-t1_ss, t2_ss])
             
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
