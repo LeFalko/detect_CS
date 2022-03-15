@@ -3,9 +3,9 @@
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
-                             QTextEdit, QWidget, QCheckBox, QLineEdit)
+                             QTextEdit, QWidget, QCheckBox, QLineEdit, QScrollBar)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
-from PyQt5.QtCore import QUrl, QSize
+from PyQt5.QtCore import QUrl, QSize, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
@@ -83,6 +83,8 @@ class Content(QWidget):
         self.Interval_inspected = []
         self.upload_LFP = []
         self.upload_HIGH = []
+        self.upload_fileName = []
+        self.fileNames = []
         self.PC_Counter = 0
         self.PC_Number = 10
         self.CSNumber = 10
@@ -152,7 +154,7 @@ class Content(QWidget):
         right_panel.setLayout(layout)
         self.tab_preprocessing.layout.addWidget(self.select_cs_box, 1, 0)
         self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 0)
-        self.tab_preprocessing.layout.addWidget(right_panel, 1, 1)
+        self.tab_preprocessing.layout.addWidget(right_panel, 0, 1, 2, 1)
         self.tab_preprocessing.layout.setColumnStretch(0, 4)
         self.tab_preprocessing.layout.setRowStretch(0, 0)
         self.tab_preprocessing.layout.setRowStretch(1, 4)
@@ -238,7 +240,11 @@ class Content(QWidget):
 
         select_cs_layout.addWidget(widget1, 0, 0)
         select_cs_layout.addWidget(self.canvas, 2, 0)
-
+        self.scroll = QScrollBar(Qt.Horizontal)
+        self.step = 1
+        select_cs_layout.addWidget(self.scroll, 3, 0)
+        self.canvas_ylim = (0, 1)
+        self.setupSlider()
         self.select_cs_box.setLayout(select_cs_layout)
 
     # creating a box in the first tab containing sampling rate input and file upload
@@ -268,6 +274,7 @@ class Content(QWidget):
         layout.addRow(QLabel("Sampling rate [Hz]"), self.setSamplingRate())
         layout.addRow(QLabel("High pass AP variable name"), self.setHighVarname())
         layout.addRow(QLabel("LFP variable name"), self.setLFPVarname())
+        layout.addRow(QLabel("Max. CSs to select"), self.setMaxCSs())
         layout.addRow(ok_button)
         dialog.setLayout(layout)
         dialog.exec_()
@@ -328,22 +335,14 @@ class Content(QWidget):
         lineedit.textChanged.connect(changeText)
         return lineedit
     
-    # creating sampling input dialog
-    # def getInteger(self):
-    #     i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 25000, 0,
-    #                                        100000, 1000)
-    #     if okPressed and i > 0:
-    #         self.sampling_rate = i
-
-    # def getHighPass(self):
-    #     text, okPressed = QInputDialog.getText(self, "Enter high pass data name", "Your data:", QLineEdit.Normal, "HIGH")
-    #     if okPressed and text != '':
-    #         self.HIGH_varname = text
-
-    # def getLFP(self):
-    #     text, okPressed = QInputDialog.getText(self, "Enter lfp data name", "Your data:", QLineEdit.Normal, "RAW")
-    #     if okPressed and text != '':
-    #         self.LFP_varname = text
+    def setMaxCSs(self):
+        def changeMaxCSs():
+            self.PC_Number = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 20)
+        spinbox.setValue(self.PC_Number)
+        spinbox.valueChanged.connect(changeMaxCSs)
+        return spinbox
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -356,9 +355,10 @@ class Content(QWidget):
 
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
+        self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
         self.upload_LFP = np.array(mat[self.LFP_varname])
         self.upload_HIGH = np.array(mat[self.HIGH_varname])
-        self.ID = np.append(self.ID, fileName)
+        self.ID = np.append(self.ID, self.upload_fileName)
         self.LFP.append(self.upload_LFP[0])
         self.HIGH.append(self.upload_HIGH[0])
         self.plot_data()
@@ -395,7 +395,32 @@ class Content(QWidget):
         self.canvas.lfp_axes.plot(t, raw_data, 'tab:blue', lw=0.4)
         self.canvas.lfp_axes.set_ylabel('Low field potential')
         self.canvas.lfp_axes.set_xlabel('time [s]')
+        self.canvas.high_axes.set_title(self.upload_fileName)
         self.canvas.draw()
+        self.canvas_ylim = self.canvas.lfp_axes.get_ylim()
+        self.canvas.mpl_connect('button_release_event', self.on_draw)
+    
+    def on_draw(self, event):
+        # self.xlim = self.axes.get_xlim()
+        self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
+        print(self.canvas.high_axes.get_ylim())
+        self.canvas.draw_idle()
+        
+    def setupSlider(self):
+        # self.lims = np.array(self.canvas.lfp_axes.get_xlim())
+        self.lims = np.array([0, 1])
+        self.scroll.setPageStep(self.step*1)
+        self.scroll.actionTriggered.connect(self.update)
+        self.update()
+        
+    def update(self, evt=None):
+        r = self.scroll.value()/((1+self.step)*10)
+        l1 = self.lims[0]+r*np.diff(self.lims)
+        l2 = l1 +  np.diff(self.lims)*self.step
+        self.canvas.lfp_axes.set_xlim(l1,l2)
+        self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
+        print(self.scroll.value(), l1,l2)
+        self.canvas.draw_idle()
 
     # activates span selection
     def select_cs(self):
