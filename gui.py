@@ -408,7 +408,7 @@ class Content(QWidget):
         
     def setupSlider(self):
         # self.lims = np.array(self.canvas.lfp_axes.get_xlim())
-        self.lims = np.array([0, 1])
+        self.lims = np.array([0, 1.0])
         self.scroll.setPageStep(self.step*1)
         self.scroll.actionTriggered.connect(self.update)
         self.update()
@@ -488,10 +488,10 @@ class Content(QWidget):
         detect_upload_button.clicked.connect(self.upload_detection_file)
 
         simple_spike_button = QPushButton("Enter SS data name")
-        simple_spike_button.clicked.connect(self.getSimpleSpikes)
+        simple_spike_button.clicked.connect(self.get_simpleSpikes)
 
         SS_sampling_button = QPushButton("Enter SS sampling rate")
-        SS_sampling_button.clicked.connect(self.getIntegerSS)
+        SS_sampling_button.clicked.connect(self.get_integerSS)
 
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
         detect_upload_weights_button.clicked.connect(self.upload_weights)
@@ -525,12 +525,12 @@ class Content(QWidget):
             self.detect_HIGH = norm_high_pass(self.detect_HIGH)
             self.mat = mat
 
-    def getSimpleSpikes(self):
+    def get_simpleSpikes(self):
         text, okPressed = QInputDialog.getText(self, "Enter simple spike data name", "Your data:", QLineEdit.Normal, "SS")
         if okPressed and text != '':
             self.SS_varname = text
 
-    def getIntegerSS(self):
+    def get_integerSS(self):
         i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 1000, 0,
                                            10000, 100)
         if okPressed and i > 0:
@@ -557,6 +557,7 @@ class Content(QWidget):
         cs_offset = output['cs_offset']
         cluster_ID = output['cluster_ID']
         embedding = output['embedding']
+        print(cs_onset.shape, cluster_ID.shape, embedding.shape)
         
         # sort clusters by cluster size
         clusters = np.unique(cluster_ID)
@@ -581,9 +582,9 @@ class Content(QWidget):
         self.n_clusters = n_clusters
         self.cluster_size = cluster_size_sorted
 
-        self.savedetectFileDialog()
+        self.save_detectFileDialog()
 
-    def savedetectFileDialog(self):
+    def save_detectFileDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.fileName+'_output.mat',
@@ -594,8 +595,8 @@ class Content(QWidget):
                                   'CS_offset': self.CS_offset,
                                   'cluster_ID': self.cluster_ID,
                                   'embedding': self.embedding}, do_compression=True)
+
     # FUNCTIONS THIRD TAB
-    
     def align_spikes(self, spikes, alignment, l1=300, l2=300):
         N = len(alignment)
         spikes_aligned = np.zeros([N, l1+l2+1]) * np.nan
@@ -613,6 +614,15 @@ class Content(QWidget):
     def create_show_data_box(self):
         # show_data_layout = QGridLayout()
         show_data_layout = QVBoxLayout()
+        
+        setting_button = QPushButton("Setting")
+        setting_button.clicked.connect(self.open_setting_box2)
+        
+        load_file_button = QPushButton("Load PC recording")
+        load_file_button.clicked.connect(self.upload_detection_file)
+        
+        load_output_button = QPushButton("Load output")
+        load_output_button.clicked.connect(self.open_OutputDialog)
 
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
@@ -635,6 +645,9 @@ class Content(QWidget):
         # show_data_layout.addWidget(plotting_button, 0, 0)
         # show_data_layout.addWidget(select_widget, 1, 0)
         # show_data_layout.addWidget(saving_button, 2, 0)
+        show_data_layout.addWidget(setting_button)
+        show_data_layout.addWidget(load_file_button)
+        show_data_layout.addWidget(load_output_button)
         show_data_layout.addWidget(plotting_button)
         show_data_layout.addWidget(select_widget)
         show_data_layout.addWidget(saving_button)
@@ -643,7 +656,87 @@ class Content(QWidget):
         self.select_show_data_box.setLayout(show_data_layout)
 
         create_cluster_selection_button.clicked.connect(self.generate_cluster_list)
+        
+    def open_setting_box2(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("Setting")
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.close)
+        layout = QFormLayout()
+        layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
+        layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
+        layout.addRow(QLabel("gaussian kernel size [ms]"), self.set_sigma())
+        layout.addRow(ok_button)
+        dialog.setLayout(layout)
+        dialog.exec_()
+        dialog.show()
+        
+    def set_samplingRate_SS(self):
+        def changeSamplingRate():
+            self.sampling_rate_SS = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(100, 10000)
+        spinbox.setValue(self.sampling_rate_SS)
+        spinbox.valueChanged.connect(changeSamplingRate)
+        return spinbox
+    
+    def set_SSVarname(self):
+        def changeText():
+            self.SS_varname = lineedit.text()
+        lineedit = QLineEdit(self.SS_varname)
+        lineedit.textChanged.connect(changeText)
+        return lineedit
+    
+    def set_sigma(self):
+        def changeSamplingRate():
+            self.sigma = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 20)
+        spinbox.setValue(self.sigma)
+        spinbox.valueChanged.connect(changeSamplingRate)
+        return spinbox
+    
+    def open_OutputDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self, "Upload data", "",
+                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+        if fileName:
+            self.upload_output(fileName)
+        
+    def upload_output(self, fileName):
+        output = sp.loadmat(fileName)
 
+        cs_onset = output['CS_onset'].squeeze()
+        cs_offset = output['CS_offset'].squeeze()
+        cluster_ID = output['cluster_ID'].squeeze()
+        embedding = output['embedding'].squeeze()
+        print(cs_onset.shape, cluster_ID.shape, embedding.shape)
+        
+        # sort clusters by cluster size
+        clusters = np.unique(cluster_ID)
+        n_clusters = len(clusters)
+        cluster_size = np.zeros(n_clusters)
+        cluster_ID_sorted = np.zeros_like(cluster_ID)
+        print(cluster_ID, clusters)
+        for i in range(n_clusters):
+            cluster_size[i] =  sum(cluster_ID == clusters[i])
+        print(clusters, n_clusters, cluster_size)
+        clusters_sorted_idx = np.argsort(cluster_size)[::-1]
+        cluster_size_sorted = np.sort(cluster_size)[::-1]
+        for i in range(n_clusters):
+            cluster_ID_sorted[cluster_ID==clusters[clusters_sorted_idx[i]]] = i+1
+        clusters_sorted = np.sort(np.unique(cluster_ID_sorted))
+        print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
+        
+        self.CS_onset = cs_onset
+        self.CS_offset = cs_offset
+        self.cluster_ID = cluster_ID_sorted
+        self.embedding = embedding
+        self.clusters = clusters_sorted
+        self.n_clusters = n_clusters
+        self.cluster_size = cluster_size_sorted
+        
     def add_checkbox(self):
         
         self.checkbox_widget.setLayout(self.checkbox_layout)
@@ -757,7 +850,7 @@ class Content(QWidget):
                 self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i])
                 offset = offset + (cluster_ID==i+1).sum()
             ax2 = self.canvas2.SS.twinx()
-            ss_conv = gaussian_filter1d(ss_aligned, self.sigma, order=0)*1000
+            ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
             for i in range(self.n_clusters):
                 ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==clusters[i], :], 0), c=self.colors[i], lw=2)
             
