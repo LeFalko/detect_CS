@@ -2,8 +2,8 @@
 # from typing import List, Any
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
-                             QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QTabWidget,
-                             QTextEdit, QWidget, QCheckBox, QLineEdit, QScrollBar)
+                             QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
+                             QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
 from PyQt5.QtCore import QUrl, QSize, Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
@@ -40,7 +40,7 @@ class MplCanvas2(FigureCanvas):
         self.CS_clusters = fig2.add_subplot(222)
         # self.lfp_axes.set_ylabel('Low field potential')
         self.SS = fig2.add_subplot(224)
-
+        self.ax2 = self.SS.twinx()
 
         super(MplCanvas2, self).__init__(fig2)
 
@@ -137,12 +137,18 @@ class Content(QWidget):
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
         self.information_box = QGroupBox("Please note:")
+        self.loaded_files_box = QGroupBox("Loaded files")
+        self.selected_CSs_box = QGroupBox("Selected CSs")
         self.select_cs_box = QGroupBox("Select complex spikes")
         self.after_labeling_box = QGroupBox("After labeling")
 
+        # List of loaded files
+        self.loaded_file_listWidget = QListWidget() 
+        
         # Add groupboxes to first tab
         self.create_data_input_box()
         self.create_information_box()
+        self.create_loaded_files_box()
         self.create_select_cs_box()
         self.create_after_labeling_box()
 
@@ -150,7 +156,9 @@ class Content(QWidget):
         right_panel = QWidget()
         layout = QGridLayout()
         layout.addWidget(self.information_box, 0, 0)
-        layout.addWidget(self.after_labeling_box, 1, 0)
+        layout.addWidget(self.loaded_files_box, 1, 0)
+        layout.addWidget(self.selected_CSs_box, 2, 0)
+        layout.addWidget(self.after_labeling_box, 3, 0)
         right_panel.setLayout(layout)
         self.tab_preprocessing.layout.addWidget(self.select_cs_box, 1, 0)
         self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 0)
@@ -166,7 +174,7 @@ class Content(QWidget):
         self.tab_detect.layout = QGridLayout(self)
 
         # Groupboxes
-        self.detect_cs_box = QGroupBox("Detect complex spikes")
+        self.detect_cs_box = QGroupBox("Detect CS")
 
         # Add Groupboxes to second tab
         self.create_detect_cs_box()
@@ -181,7 +189,8 @@ class Content(QWidget):
         self.tab_postprocessing.layout = QGridLayout(self)
 
         # Groupboxes
-        self.select_show_data_box = QGroupBox("Select clusters to show")
+        # self.select_show_data_box = QGroupBox("Select clusters to show")
+        self.select_show_data_box = QWidget()
         self.cluster_plotting_box = QGroupBox("Plotting")
 
         # Add Groupboxes to third tab
@@ -237,14 +246,35 @@ class Content(QWidget):
         
         layout1.addWidget(widget2, 0, 1)
         widget1.setLayout(layout1)
+        
+        max_button = QPushButton("Full")
+        max_button.clicked.connect(self.set_max_xlim)
+        second_button = QPushButton("1s")
+        second_button.clicked.connect(lambda: self.set_zoom_xlim(1.0))
+        millisecond_button = QPushButton("50ms")
+        millisecond_button.clicked.connect(lambda: self.set_zoom_xlim(0.05))
+        zoomin_button = QPushButton("Zoom in")
+        zoomin_button.clicked.connect(lambda: self.zoom(0.75))
+        zoomout_button = QPushButton("Zoom out")
+        zoomout_button.clicked.connect(lambda: self.zoom(1/0.75))
+        
+        ctrl_layout = QHBoxLayout()
+        ctrl_layout.addWidget(max_button)
+        ctrl_layout.addWidget(second_button)
+        ctrl_layout.addWidget(millisecond_button)
+        ctrl_layout.addWidget(zoomin_button)
+        ctrl_layout.addWidget(zoomout_button)
+        ctrl = QWidget()
+        ctrl.setLayout(ctrl_layout)
 
         select_cs_layout.addWidget(widget1, 0, 0)
+        select_cs_layout.addWidget(ctrl, 1, 0)
         select_cs_layout.addWidget(self.canvas, 2, 0)
         self.scroll = QScrollBar(Qt.Horizontal)
-        self.step = 1
+        self.step = 20
+        # self.setupSlider(0, 0, 0)
         select_cs_layout.addWidget(self.scroll, 3, 0)
         self.canvas_ylim = (0, 1)
-        self.setupSlider()
         self.select_cs_box.setLayout(select_cs_layout)
 
     # creating a box in the first tab containing sampling rate input and file upload
@@ -271,10 +301,10 @@ class Content(QWidget):
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
-        layout.addRow(QLabel("Sampling rate [Hz]"), self.setSamplingRate())
-        layout.addRow(QLabel("High pass AP variable name"), self.setHighVarname())
-        layout.addRow(QLabel("LFP variable name"), self.setLFPVarname())
-        layout.addRow(QLabel("Max. CSs to select"), self.setMaxCSs())
+        layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
+        layout.addRow(QLabel("High pass AP variable name"), self.set_HighVarname())
+        layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
+        layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
         dialog.setLayout(layout)
         dialog.exec_()
@@ -282,28 +312,74 @@ class Content(QWidget):
     
     def create_information_box(self):
         information_layout = QVBoxLayout()
-        # information_layout.setColumnStretch(1, 1)
-        # information_layout.setRowStretch(1, 1)
 
         textedit = QTextEdit()
-        textedit.resize(300, 200)
+        # textedit.resize(300, 200)
         textedit.setPlainText("Separate files individual PCs (unfiltered raw data) \n"
-                              "Name the variables as: \n  - High-Pass: action potentials \n If LFP is available use: "
-                              "\n - Low-Pass: LFP (if not available then extract)\n"
                               "Ask for cut-off frequencies: upper cut off and lower cut off, "
                               "sampling rate or use default values (use from our paper)")
 
-        
         information_layout.addWidget(textedit)
-        information_layout.addStretch()
 
         self.information_box.setLayout(information_layout)
         
+    def create_loaded_files_box(self):
+        layout = QVBoxLayout()
+        self.loaded_file_listWidget.clear()
+        self.loaded_file_listWidget.addItems(self.ID)
+        # self.loaded_file_listWidget.addItem("file1")
+        # self.loaded_file_listWidget.addItem("file2")
+        self.loaded_file_listWidget.setCurrentRow(len(self.ID)-1)
+        print(self.loaded_file_listWidget.currentRow())
+                
+        plot_file_button = QPushButton("Plot")
+        plot_file_button.clicked.connect(self.set_current_file)        
+                
+        remove_button = QPushButton("Remove")
+        remove_button.clicked.connect(self.remove_loaded_file)
+        
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(plot_file_button)
+        button_layout.addWidget(remove_button)
+        button_widget = QWidget()
+        button_widget.setLayout(button_layout)
+        
+        layout.addWidget(self.loaded_file_listWidget)
+        layout.addStretch()
+        layout.addWidget(button_widget)
+        
+        self.loaded_files_box.setLayout(layout)
+        self.loaded_files_box.update()
+        self.set_current_file()
+        
+    def remove_loaded_file(self):
+        idx = self.loaded_file_listWidget.currentRow()
+        print(idx)
+        if self.LFP:
+            self.loaded_file_listWidget.takeItem(idx)
+            self.ID.pop(idx)
+            self.LFP.pop(idx)
+            self.HIGH.pop(idx)
+            
+            self.canvas.high_axes.cla()
+            self.canvas.lfp_axes.cla()
+            self.canvas.draw_idle()
+            self.loaded_files_box.update()
+    
+    def set_current_file(self):
+        idx = self.loaded_file_listWidget.currentRow()
+        print(idx)
+        if self.LFP:
+            self.upload_LFP = self.LFP[idx]
+            self.upload_HIGH = self.HIGH[idx]
+            print(self.ID[idx])
+            self.plot_data()
+    
     def create_after_labeling_box(self):
         after_labeling_layout = QHBoxLayout()
         
         goto_Colab_button = QPushButton("TRAIN ALGORITHM")
-        goto_Colab_button.setToolTip('Plase finish labeling data before going to the website')
+        goto_Colab_button.setToolTip('Plase finish labeling data before going to Colab')
         goto_Colab_button.clicked.connect(self.open_Colab)
         goto_Colab_button.setIcon(QIcon(('./img/colab_logo.png')))
         
@@ -312,7 +388,7 @@ class Content(QWidget):
         self.after_labeling_box.setLayout(after_labeling_layout)
     
     # creating input for setting parameters
-    def setSamplingRate(self):
+    def set_samplingRate(self):
         def changeSamplingRate():
             self.sampling_rate = spinbox.value()
         spinbox = QSpinBox()
@@ -321,21 +397,21 @@ class Content(QWidget):
         spinbox.valueChanged.connect(changeSamplingRate)
         return spinbox
     
-    def setHighVarname(self):
+    def set_HighVarname(self):
         def changeText():
             self.HIGH_varname = lineedit.text()
         lineedit = QLineEdit(self.HIGH_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
     
-    def setLFPVarname(self):
+    def set_LFPVarname(self):
         def changeText():
             self.LFP_varname = lineedit.text()
         lineedit = QLineEdit(self.LFP_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
     
-    def setMaxCSs(self):
+    def set_maxCSs(self):
         def changeMaxCSs():
             self.PC_Number = spinbox.value()
         spinbox = QSpinBox()
@@ -356,12 +432,13 @@ class Content(QWidget):
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
         self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
-        self.upload_LFP = np.array(mat[self.LFP_varname])
-        self.upload_HIGH = np.array(mat[self.HIGH_varname])
-        self.ID = np.append(self.ID, self.upload_fileName)
-        self.LFP.append(self.upload_LFP[0])
-        self.HIGH.append(self.upload_HIGH[0])
+        self.upload_LFP = np.array(mat[self.LFP_varname][0])
+        self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
+        self.ID.append(self.upload_fileName)
+        self.LFP.append(self.upload_LFP)
+        self.HIGH.append(self.upload_HIGH)
         self.plot_data()
+        self.create_loaded_files_box()
 
     def saveFileDialog(self):
         options = QFileDialog.Options()
@@ -382,17 +459,19 @@ class Content(QWidget):
     
     # updating plot for raw data
     def plot_data(self):
-        raw_data = self.upload_LFP[0]
-        high_data = self.upload_HIGH[0]
+        raw_data = self.upload_LFP
+        high_data = self.upload_HIGH
         #print(raw_data, high_data)
 
-        t = np.linspace(0, len(self.upload_LFP[0])/self.sampling_rate, len(self.upload_LFP[0]))
+        t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
         self.canvas.high_axes.plot(t, high_data, 'tab:blue', lw=0.4)
+        self.canvas.high_axes.set_xlim([0, t[-1]])
         self.canvas.high_axes.set_ylabel('High-pass signal')
         self.canvas.lfp_axes.plot(t, raw_data, 'tab:blue', lw=0.4)
+        self.canvas.lfp_axes.set_xlim([0, t[-1]])
         self.canvas.lfp_axes.set_ylabel('Low field potential')
         self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.high_axes.set_title(self.upload_fileName)
@@ -406,20 +485,68 @@ class Content(QWidget):
         print(self.canvas.high_axes.get_ylim())
         self.canvas.draw_idle()
         
-    def setupSlider(self):
+    def setupSlider(self, minimum, maximum, step, x0=0):
+        # self.scroll = QScrollBar(Qt.Horizontal)
         # self.lims = np.array(self.canvas.lfp_axes.get_xlim())
-        self.lims = np.array([0, 1.0])
-        self.scroll.setPageStep(self.step*1)
-        self.scroll.actionTriggered.connect(self.update)
-        self.update()
+        print('setupSlider', self.lims)
+        self.scroll.setMinimum(minimum)
+        self.scroll.setMaximum(maximum)
+        self.scroll.setPageStep(step)
+        self.scroll.setValue(x0)
+        # self.scroll.update()
+        # self.scroll.actionTriggered.connect(self.update)
+        try:
+            self.scroll.valueChanged.disconnect()
+        except:
+            pass
+        self.scroll.valueChanged.connect(self.update)
         
     def update(self, evt=None):
-        r = self.scroll.value()/((1+self.step)*10)
-        l1 = self.lims[0]+r*np.diff(self.lims)
-        l2 = l1 +  np.diff(self.lims)*self.step
+        l1 = self.lims[0] + self.scroll.value() * np.diff(self.lims) / self.step 
+        l2 = l1 +  np.diff(self.lims)
         self.canvas.lfp_axes.set_xlim(l1,l2)
         self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
-        print(self.scroll.value(), l1,l2)
+        print('update',self.scroll.value(), l1,l2)
+        self.canvas.draw_idle()
+        
+    def set_max_xlim(self):
+        t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
+        l = len(self.upload_HIGH)-1
+        self.canvas.high_axes.set_xlim(t[0], t[l])
+        self.canvas.lfp_axes.set_xlim(t[0], t[l])
+        self.lims = np.array([0, len(self.upload_LFP)/self.sampling_rate])
+        self.setupSlider(0, 0, 0)
+        self.canvas.draw_idle()
+        
+    def set_zoom_xlim(self, width):
+        maximum = np.floor(len(self.upload_LFP) / self.sampling_rate * self.step / width).astype(int)
+        minimum = 0
+        lims = self.canvas.lfp_axes.get_xlim()
+        xlim = [lims[0], lims[0]+width]
+        x0 = np.floor(xlim[0] * self.step / width).astype(int)
+        print(xlim[0], x0)
+        self.scroll.setValue(x0)
+        self.lims = np.array([0, width])
+        self.setupSlider(minimum, maximum, self.step, x0)
+        self.update()
+        self.canvas.draw_idle()
+        
+    def zoom(self, z):
+        lims = self.canvas.lfp_axes.get_xlim()
+        center = np.mean(lims)
+        w = z * (lims[1] - center)
+        width = z * np.diff(lims)[0]
+        maximum = np.floor(len(self.upload_LFP) / self.sampling_rate * self.step / width).astype(int)
+        minimum = 0
+        lims_new = np.round([center-w, center+w], 5)
+        xlim = [lims_new[0], lims_new[0]+width]
+        x0 = np.floor(xlim[0] * self.step / width).astype(int)
+        print('zoom', xlim[0], x0, width)
+        self.scroll.setValue(x0)
+        self.lims = np.array([0, width])
+        self.update()
+        self.setupSlider(minimum, maximum, self.step, x0)
+        # self.update()
         self.canvas.draw_idle()
 
     # activates span selection
@@ -462,7 +589,7 @@ class Content(QWidget):
             self.value_counter = 0
             self.plot_data()
 
-    #TODO: implement correct delete last CS function
+    # delete last CS function
     def delete_last_CS(self):
         if self.x_values[self.backwardscounter][0] == 0:
             self.backwardscounter -= 1
@@ -472,7 +599,7 @@ class Content(QWidget):
             self.value_counter -= 1
 
     def create_labels(self):
-        labels = np.zeros_like(self.upload_LFP[0])
+        labels = np.zeros_like(self.upload_LFP)
         for i in range(self.CSNumber):
             labels[self.x_values[i][0]:self.x_values[i][1]] = 1
         self.Labels.append(labels)
@@ -487,11 +614,11 @@ class Content(QWidget):
         detect_upload_button = QPushButton("Upload a PC recording")
         detect_upload_button.clicked.connect(self.upload_detection_file)
 
-        simple_spike_button = QPushButton("Enter SS data name")
-        simple_spike_button.clicked.connect(self.get_simpleSpikes)
+        # simple_spike_button = QPushButton("Enter SS data name")
+        # simple_spike_button.clicked.connect(self.get_simpleSpikes)
 
-        SS_sampling_button = QPushButton("Enter SS sampling rate")
-        SS_sampling_button.clicked.connect(self.get_integerSS)
+        # SS_sampling_button = QPushButton("Enter SS sampling rate")
+        # SS_sampling_button.clicked.connect(self.get_integerSS)
 
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
         detect_upload_weights_button.clicked.connect(self.upload_weights)
@@ -500,10 +627,10 @@ class Content(QWidget):
         detecting_button.clicked.connect(self.detect_CS_starter)
 
         detect_cs_layout.addWidget(detect_upload_button, 0, 0)
-        detect_cs_layout.addWidget(simple_spike_button, 1, 0)
-        detect_cs_layout.addWidget(SS_sampling_button, 2, 0)
-        detect_cs_layout.addWidget(detect_upload_weights_button, 3, 0)
-        detect_cs_layout.addWidget(detecting_button, 4, 0)
+        # detect_cs_layout.addWidget(simple_spike_button, 1, 0)
+        # detect_cs_layout.addWidget(SS_sampling_button, 2, 0)
+        detect_cs_layout.addWidget(detect_upload_weights_button, 1, 0)
+        detect_cs_layout.addWidget(detecting_button, 2, 0)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
 
@@ -526,7 +653,7 @@ class Content(QWidget):
             self.mat = mat
 
     def get_simpleSpikes(self):
-        text, okPressed = QInputDialog.getText(self, "Enter simple spike data name", "Your data:", QLineEdit.Normal, "SS")
+        text, okPressed = QInputDialog.getText(self, "Enter SS data name", "Your data:", QLineEdit.Normal, "SS")
         if okPressed and text != '':
             self.SS_varname = text
 
@@ -547,7 +674,7 @@ class Content(QWidget):
     def detect_CS_starter(self):
         runningbox = QMessageBox()
         runningbox.setWindowTitle("Running")
-        runningbox.setText("Detecting complex spikes....")
+        runningbox.setText("Detecting CSs....")
         runningbox.exec_()
         
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
@@ -645,13 +772,29 @@ class Content(QWidget):
         # show_data_layout.addWidget(plotting_button, 0, 0)
         # show_data_layout.addWidget(select_widget, 1, 0)
         # show_data_layout.addWidget(saving_button, 2, 0)
-        show_data_layout.addWidget(setting_button)
-        show_data_layout.addWidget(load_file_button)
-        show_data_layout.addWidget(load_output_button)
-        show_data_layout.addWidget(plotting_button)
-        show_data_layout.addWidget(select_widget)
-        show_data_layout.addWidget(saving_button)
-        show_data_layout.addStretch()
+        
+        # show_data_layout.addWidget(setting_button)
+        # show_data_layout.addWidget(load_file_button)
+        # show_data_layout.addWidget(load_output_button)
+        # show_data_layout.addWidget(plotting_button)
+        # show_data_layout.addWidget(select_widget)
+        # show_data_layout.addWidget(saving_button)
+        
+        load_box = QGroupBox("Load files")
+        load_box_layout = QVBoxLayout()
+        load_box_layout.addWidget(load_file_button)
+        load_box_layout.addWidget(load_output_button)
+        load_box.setLayout(load_box_layout)
+        
+        select_cluster_box = QGroupBox("Select clusters")
+        select_cluster_box_layout = QVBoxLayout()
+        select_cluster_box_layout.addWidget(select_widget)
+        select_cluster_box_layout.addWidget(saving_button)
+
+        select_cluster_box.setLayout(select_cluster_box_layout)
+        
+        show_data_layout.addWidget(load_box)
+        show_data_layout.addWidget(select_cluster_box)
 
         self.select_show_data_box.setLayout(show_data_layout)
 
@@ -771,11 +914,23 @@ class Content(QWidget):
 
     def create_cluster_plotting_box(self):
         cluster_plotting_layout = QGridLayout()
-
+        navi = QWidget()
         toolbar = NavigationToolbar(self.canvas2, self)
+        
+        setting_button = QPushButton("Setting")
+        setting_button.clicked.connect(self.open_setting_box2)
+        
+        plotting_button = QPushButton('Plot data')
+        plotting_button.clicked.connect(self.plot_detected_data)
 
-        cluster_plotting_layout.addWidget(toolbar, 0, 0)
-        cluster_plotting_layout.addWidget(self.canvas2, 1, 0)
+        navi_layout = QHBoxLayout()
+        navi_layout.addWidget(setting_button)
+        navi_layout.addWidget(plotting_button)
+        navi_layout.addWidget(toolbar)
+        navi.setLayout(navi_layout)
+        
+        cluster_plotting_layout.addWidget(navi, 0, 0)
+        cluster_plotting_layout.addWidget(self.canvas2, 2, 0)
 
         self.cluster_plotting_box.setLayout(cluster_plotting_layout)
 
@@ -788,12 +943,12 @@ class Content(QWidget):
         embedding = self.embedding
         n_clusters = self.n_clusters
 
-        time = 1000
-
         #TODO: Different colors for different clusters, coorect plotting
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
         self.canvas2.CS_clusters.cla()
+        self.canvas2.SS.cla()
+        self.canvas2.ax2.cla()
 
         for i in range(self.n_clusters):
             idx = cluster_ID == i+1
@@ -849,16 +1004,18 @@ class Content(QWidget):
                 [iy, ix] = np.where(ss_aligned[cluster_ID==clusters[i], :]==True)   
                 self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i])
                 offset = offset + (cluster_ID==i+1).sum()
-            ax2 = self.canvas2.SS.twinx()
+            
+            
             ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
             for i in range(self.n_clusters):
-                ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==clusters[i], :], 0), c=self.colors[i], lw=2)
+                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==clusters[i], :], 0), c=self.colors[i], lw=2)
             
-            ax2.set_ylabel('SS firing rate [spikes/s]')
+            self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
             self.canvas2.SS.set_ylabel('CS')
             self.canvas2.SS.set_title('SS', loc='left')
             self.canvas2.SS.set_xlim([-t1_ss, t2_ss])
+            
             
         # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
         # self.canvas2.onset.set_xlabel('CS onset')
