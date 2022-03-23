@@ -5,12 +5,13 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, Q
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
                              QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
-from PyQt5.QtCore import QUrl, QSize, Qt
+from PyQt5.QtCore import QUrl, QSize, Qt, QRect
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import matplotlib.colors as mplcolors
 import scipy.io as sp
 from scipy.ndimage import gaussian_filter1d
@@ -18,6 +19,8 @@ import numpy as np
 import sys
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat
 import uneye
+
+# from IPython import embed; 
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
@@ -29,16 +32,13 @@ class MplCanvas(FigureCanvas):
         self.lfp_axes.set_xlabel('Time')
 
         super(MplCanvas, self).__init__(fig)
-
+        
 class MplCanvas2(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig2 = Figure(figsize=(width, height), dpi=dpi)
         self.CS = fig2.add_subplot(221)
         self.LFP = fig2.add_subplot(223)
-        # self.clusters.get_xaxis().set_visible(False)
-        # self.high_axes.set_ylabel('High-pass signal')
         self.CS_clusters = fig2.add_subplot(222)
-        # self.lfp_axes.set_ylabel('Low field potential')
         self.SS = fig2.add_subplot(224)
         self.ax2 = self.SS.twinx()
 
@@ -83,6 +83,7 @@ class Content(QWidget):
         self.Interval_inspected = []
         self.upload_LFP = []
         self.upload_HIGH = []
+        self.label = []
         self.upload_fileName = []
         self.fileNames = []
         self.PC_Counter = 0
@@ -110,6 +111,13 @@ class Content(QWidget):
         #                'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        
+        # Selecting CS span
+        self.is_clicked = False
+        self.cs_span = np.empty(2)
+        self.cs_spans = np.array([])
+        self.cs_spans_all = []
+        self.cs_patch = []
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -136,33 +144,36 @@ class Content(QWidget):
 
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
-        self.information_box = QGroupBox("Please note:")
+        # self.information_box = QGroupBox("Please note:")
+        self.save_box = QGroupBox("Save training data")
         self.loaded_files_box = QGroupBox("Loaded files")
-        self.selected_CSs_box = QGroupBox("Selected CSs")
         self.select_cs_box = QGroupBox("Select complex spikes")
         self.after_labeling_box = QGroupBox("After labeling")
 
         # List of loaded files
         self.loaded_file_listWidget = QListWidget() 
+        print('width:',self.loaded_file_listWidget)
         
         # Add groupboxes to first tab
         self.create_data_input_box()
-        self.create_information_box()
+        # self.create_information_box()
+        self.create_save_box()
         self.create_loaded_files_box()
         self.create_select_cs_box()
         self.create_after_labeling_box()
 
         # layout for first tab
-        right_panel = QWidget()
+        left_panel = QWidget()
         layout = QGridLayout()
-        layout.addWidget(self.information_box, 0, 0)
-        layout.addWidget(self.loaded_files_box, 1, 0)
-        layout.addWidget(self.selected_CSs_box, 2, 0)
-        layout.addWidget(self.after_labeling_box, 3, 0)
-        right_panel.setLayout(layout)
-        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 1, 0)
-        self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 0)
-        self.tab_preprocessing.layout.addWidget(right_panel, 0, 1, 2, 1)
+        layout.addWidget(self.data_input_box, 0, 0)
+        # layout.addWidget(self.information_box, 1, 0)
+        layout.addWidget(self.loaded_files_box, 2, 0)
+        layout.addWidget(self.save_box, 3, 0)
+        layout.addWidget(self.after_labeling_box, 4, 0)
+        left_panel.setLayout(layout)
+        # self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 1)
+        self.tab_preprocessing.layout.addWidget(left_panel, 0, 0)
+        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 0, 1)
         self.tab_preprocessing.layout.setColumnStretch(0, 4)
         self.tab_preprocessing.layout.setRowStretch(0, 0)
         self.tab_preprocessing.layout.setRowStretch(1, 4)
@@ -218,10 +229,9 @@ class Content(QWidget):
         widget1 = QWidget()
         layout1 = QGridLayout()
         
-
         toolbar = NavigationToolbar(self.canvas, self)
         
-        layout1.addWidget(toolbar, 0, 0)
+        # layout1.addWidget(toolbar, 0, 0)
         
         widget2 = QWidget()
         layout2 = QGridLayout()
@@ -244,7 +254,7 @@ class Content(QWidget):
         layout2.addWidget(save_button, 1,1)
         widget2.setLayout(layout2)
         
-        layout1.addWidget(widget2, 0, 1)
+        # layout1.addWidget(widget2, 0, 1)
         widget1.setLayout(layout1)
         
         max_button = QPushButton("Full")
@@ -254,9 +264,13 @@ class Content(QWidget):
         millisecond_button = QPushButton("50ms")
         millisecond_button.clicked.connect(lambda: self.set_zoom_xlim(0.05))
         zoomin_button = QPushButton("Zoom in")
-        zoomin_button.clicked.connect(lambda: self.zoom(0.75))
+        zoomin_button.clicked.connect(lambda: self.zoom(2/3))
         zoomout_button = QPushButton("Zoom out")
-        zoomout_button.clicked.connect(lambda: self.zoom(1/0.75))
+        zoomout_button.clicked.connect(lambda: self.zoom(3/2))
+        prev_cs_button = QPushButton("Previous CS")
+        prev_cs_button.clicked.connect(self.go_to_prev_CS)
+        next_cs_button = QPushButton("Next CS")
+        next_cs_button.clicked.connect(self.go_to_next_CS)
         
         ctrl_layout = QHBoxLayout()
         ctrl_layout.addWidget(max_button)
@@ -264,6 +278,8 @@ class Content(QWidget):
         ctrl_layout.addWidget(millisecond_button)
         ctrl_layout.addWidget(zoomin_button)
         ctrl_layout.addWidget(zoomout_button)
+        ctrl_layout.addWidget(prev_cs_button)
+        ctrl_layout.addWidget(next_cs_button)
         ctrl = QWidget()
         ctrl.setLayout(ctrl_layout)
 
@@ -279,9 +295,9 @@ class Content(QWidget):
 
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
-        data_input_layout = QHBoxLayout()
+        data_input_layout = QVBoxLayout()
         
-        upload_button = QPushButton("Choose PC for manual labeling")
+        upload_button = QPushButton("Add PC for manual labeling")
         upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
         
@@ -290,9 +306,18 @@ class Content(QWidget):
 
         data_input_layout.addWidget(setting_button)
         data_input_layout.addWidget(upload_button)
-        data_input_layout.addStretch()
 
         self.data_input_box.setLayout(data_input_layout)
+        
+    def create_save_box(self):
+        save_layout = QVBoxLayout()
+        
+        save_button = QPushButton('Save')
+        save_button.clicked.connect(self.saveFileDialog)
+        
+        save_layout.addWidget(save_button)
+        
+        self.save_box.setLayout(save_layout)
 
     # creating the box in the first tab containing user information
     def open_setting_box(self):
@@ -327,8 +352,6 @@ class Content(QWidget):
         layout = QVBoxLayout()
         self.loaded_file_listWidget.clear()
         self.loaded_file_listWidget.addItems(self.ID)
-        # self.loaded_file_listWidget.addItem("file1")
-        # self.loaded_file_listWidget.addItem("file2")
         self.loaded_file_listWidget.setCurrentRow(len(self.ID)-1)
         print(self.loaded_file_listWidget.currentRow())
                 
@@ -344,9 +367,16 @@ class Content(QWidget):
         button_widget = QWidget()
         button_widget.setLayout(button_layout)
         
+        button_widget.setFixedHeight(70)
+        height = self.loaded_files_box.height()-button_widget.height()
+        self.loaded_file_listWidget.setFixedHeight(height)
+        print(self.loaded_file_listWidget.height())
+        print(self.loaded_files_box.height())
+        print(button_widget.height())
         layout.addWidget(self.loaded_file_listWidget)
         layout.addStretch()
         layout.addWidget(button_widget)
+        button_widget.sizeHint()
         
         self.loaded_files_box.setLayout(layout)
         self.loaded_files_box.update()
@@ -360,6 +390,7 @@ class Content(QWidget):
             self.ID.pop(idx)
             self.LFP.pop(idx)
             self.HIGH.pop(idx)
+            self.Labels.pop(idx)
             
             self.canvas.high_axes.cla()
             self.canvas.lfp_axes.cla()
@@ -372,7 +403,10 @@ class Content(QWidget):
         if self.LFP:
             self.upload_LFP = self.LFP[idx]
             self.upload_HIGH = self.HIGH[idx]
+            self.label = self.Labels[idx]
+            self.cs_spans = self.cs_spans_all[idx]
             print(self.ID[idx])
+            print('self.cs_spans',self.cs_spans)
             self.plot_data()
     
     def create_after_labeling_box(self):
@@ -434,9 +468,14 @@ class Content(QWidget):
         self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
         self.upload_LFP = np.array(mat[self.LFP_varname][0])
         self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
+        self.cs_span = np.zeros(2)
+        self.cs_spans = np.array([[]])
+        self.cs_patch = []
         self.ID.append(self.upload_fileName)
         self.LFP.append(self.upload_LFP)
         self.HIGH.append(self.upload_HIGH)
+        self.Labels.append(self.label)
+        self.cs_spans_all.append(self.cs_spans)
         self.plot_data()
         self.create_loaded_files_box()
 
@@ -463,27 +502,100 @@ class Content(QWidget):
         high_data = self.upload_HIGH
         #print(raw_data, high_data)
 
-        t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
+        self.t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
-        self.canvas.high_axes.plot(t, high_data, 'tab:blue', lw=0.4)
-        self.canvas.high_axes.set_xlim([0, t[-1]])
+        self.canvas.high_axes.plot(self.t, high_data, 'tab:blue', lw=0.4)
+        print('cs_spans_all', self.cs_spans_all)
+        for i in range(self.cs_spans.shape[1]):
+            ylim = self.canvas.high_axes.get_ylim()
+            
+            print('cs_spans,i', self.cs_spans,self.cs_spans.shape,i)
+            print('cs_spans[i]',self.cs_spans[:, i])
+            patch = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
+            self.canvas.high_axes.add_patch(patch)
+        self.canvas.high_axes.set_xlim([0, self.t[-1]])
         self.canvas.high_axes.set_ylabel('High-pass signal')
-        self.canvas.lfp_axes.plot(t, raw_data, 'tab:blue', lw=0.4)
-        self.canvas.lfp_axes.set_xlim([0, t[-1]])
+        self.canvas.lfp_axes.plot(self.t, raw_data, 'tab:blue', lw=0.4)
+        self.canvas.lfp_axes.set_xlim([0, self.t[-1]])
         self.canvas.lfp_axes.set_ylabel('Low field potential')
         self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.high_axes.set_title(self.upload_fileName)
         self.canvas.draw()
         self.canvas_ylim = self.canvas.lfp_axes.get_ylim()
-        self.canvas.mpl_connect('button_release_event', self.on_draw)
+    #     self.canvas.mpl_connect('button_release_event', self.on_draw)
+        self.canvas.mpl_connect('button_press_event', self.click_control)
+        self.canvas.mpl_connect('motion_notify_event', self.draw_span)
+        self.canvas.mpl_connect('button_release_event', self.set_cs_offset)
     
-    def on_draw(self, event):
-        # self.xlim = self.axes.get_xlim()
-        self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
-        print(self.canvas.high_axes.get_ylim())
-        self.canvas.draw_idle()
+    # Selecting CS 
+    # def on_draw(self, event):
+    #     # self.xlim = self.axes.get_xlim()
+    #     self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
+    #     print(self.canvas.high_axes.get_ylim())
+    #     self.canvas.draw_idle()
+    
+    def click_control(self, event):
+        if self.canvas.high_axes.patches:
+            # for i in range(self.cs_spans.T.shape[0]):
+            for i in range(len(self.canvas.high_axes.patches)):
+                # if (event.xdata >=self.t[self.cs_spans[0, i]]) and (event.xdata<=self.t[self.cs_spans[1, i]]):
+                x1 = self.canvas.high_axes.patches[i].get_x()
+                x2 = self.canvas.high_axes.patches[i].get_x() + self.canvas.high_axes.patches[i].get_width()[0]
+                print('x1,x2,event.xdata',x1,x2,event.xdata)
+                if (event.xdata >= x1) and (event.xdata <= x2):  
+                    self.canvas.high_axes.patches.pop(i)
+                    self.canvas.draw_idle()
+                    self.get_all_patches()
+                    return print('remove')
+        self.set_cs_onset(event)
+
+    def set_cs_onset(self, event):
+        self.is_clicked = True
+        self.cs_span[0] = event.xdata
+        self.cs_span[1] = event.xdata
+        ylim = self.canvas.high_axes.get_ylim()
+        self.cs_patch = patches.Rectangle((self.cs_span[0], ylim[0]), np.diff(self.cs_span), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
+        self.canvas.high_axes.add_patch(self.cs_patch)
+        
+    def draw_span(self, event):
+        if self.is_clicked:
+            self.cs_span[1] = event.xdata
+            self.cs_patch.set_width(np.diff(self.cs_span))
+            self.canvas.draw_idle()
+        
+    def set_cs_offset(self, event):
+        if self.is_clicked:
+            self.cs_span[1] = event.xdata
+            self.cs_patch.set_width(np.diff(self.cs_span))
+            
+            if abs(np.diff(self.cs_span))<0.001: # if span is too short, it doesn't count
+                print('diff',self.cs_span[0],self.cs_span[1],event.xdata,abs(np.diff(self.cs_span)))
+                self.canvas.high_axes.patches.pop()
+            self.canvas.draw_idle()
+            self.is_clicked = False
+            self.cs_span = np.empty(2)
+            self.cs_patch = []
+            self.get_all_patches()
+        
+    def get_all_patches(self):
+        onset = np.array([])
+        offset = np.array([])
+        if self.canvas.high_axes.patches:
+            for patch in self.canvas.high_axes.patches:
+                x1 = np.absolute(self.t-patch.get_x()).argmin().astype(int)
+                x2 = np.absolute(self.t-patch.get_x()-patch.get_width()).argmin().astype(int)
+                onset = np.append(onset, np.min([x1, x2]))
+                offset = np.append(offset, np.max([x1, x2]))
+            cs_spans = np.vstack((onset, offset))
+            
+            idx = np.argsort(onset)
+            print('cs_spans',cs_spans, cs_spans.shape)
+            # print('cs_spans[:,[idx]]',cs_spans[:,[idx]], cs_spans.shape, idx)
+            self.cs_spans = cs_spans[:, idx].astype(int)
+            print('self.cs_spans',self.cs_spans, self.cs_spans.shape, np.argsort(onset))
+            self.create_labels()
         
     def setupSlider(self, minimum, maximum, step, x0=0):
         # self.scroll = QScrollBar(Qt.Horizontal)
@@ -494,26 +606,25 @@ class Content(QWidget):
         self.scroll.setPageStep(step)
         self.scroll.setValue(x0)
         # self.scroll.update()
-        # self.scroll.actionTriggered.connect(self.update)
+        # self.scroll.actionTriggered.connect(self.zoom_update)
         try:
             self.scroll.valueChanged.disconnect()
         except:
             pass
-        self.scroll.valueChanged.connect(self.update)
+        self.scroll.valueChanged.connect(self.zoom_update)
         
-    def update(self, evt=None):
+    def zoom_update(self, evt=None):
         l1 = self.lims[0] + self.scroll.value() * np.diff(self.lims) / self.step 
         l2 = l1 +  np.diff(self.lims)
         self.canvas.lfp_axes.set_xlim(l1,l2)
         self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
-        print('update',self.scroll.value(), l1,l2)
+        # print('update',self.scroll.value(), l1,l2)
         self.canvas.draw_idle()
         
     def set_max_xlim(self):
-        t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
         l = len(self.upload_HIGH)-1
-        self.canvas.high_axes.set_xlim(t[0], t[l])
-        self.canvas.lfp_axes.set_xlim(t[0], t[l])
+        self.canvas.high_axes.set_xlim(self.t[0], self.t[l])
+        self.canvas.lfp_axes.set_xlim(self.t[0], self.t[l])
         self.lims = np.array([0, len(self.upload_LFP)/self.sampling_rate])
         self.setupSlider(0, 0, 0)
         self.canvas.draw_idle()
@@ -528,7 +639,7 @@ class Content(QWidget):
         self.scroll.setValue(x0)
         self.lims = np.array([0, width])
         self.setupSlider(minimum, maximum, self.step, x0)
-        self.update()
+        self.zoom_update()
         self.canvas.draw_idle()
         
     def zoom(self, z):
@@ -544,10 +655,40 @@ class Content(QWidget):
         print('zoom', xlim[0], x0, width)
         self.scroll.setValue(x0)
         self.lims = np.array([0, width])
-        self.update()
+        self.zoom_update()
         self.setupSlider(minimum, maximum, self.step, x0)
-        # self.update()
+        # self.zoom_update()
         self.canvas.draw_idle()
+        
+    def go_to_prev_CS(self):
+        width = 0.05
+        center = np.mean(self.canvas.high_axes.get_xlim())
+        idx_center = np.absolute(self.t-center).argmin().astype(int)
+        print('center',center, idx_center, self.cs_spans[0,:])
+        if self.cs_spans.T.shape[0]>0:
+            idx0 = np.where(self.cs_spans[0,:]<idx_center)[0]
+            if len(idx0)>0:
+                idx = idx0.max()
+                self.lims = (self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2)
+                print('prev cs',self.lims, idx)
+                self.canvas.lfp_axes.set_xlim([self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2])
+                self.canvas.draw_idle()
+                # self.set_zoom_xlim(width)
+                
+    def go_to_next_CS(self):
+        width = 0.05
+        center = np.mean(self.canvas.high_axes.get_xlim())
+        idx_center = np.absolute(self.t-center).argmin().astype(int)
+        print('center',center, idx_center, self.cs_spans[0,:])
+        if self.cs_spans.T.shape[0]>0:
+            idx0 = np.where(self.cs_spans[0,:]>idx_center)[0]
+            if len(idx0)>0:
+                idx = idx0.min()
+                self.lims = (self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2)
+                print('next cs',self.lims, idx)
+                self.canvas.lfp_axes.set_xlim([self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2])
+                self.canvas.draw_idle()
+                # self.set_zoom_xlim(width)
 
     # activates span selection
     def select_cs(self):
@@ -600,9 +741,14 @@ class Content(QWidget):
 
     def create_labels(self):
         labels = np.zeros_like(self.upload_LFP)
-        for i in range(self.CSNumber):
-            labels[self.x_values[i][0]:self.x_values[i][1]] = 1
-        self.Labels.append(labels)
+        for i in range(self.cs_spans.T.shape[0]):
+            labels[self.cs_spans[0,i]:self.cs_spans[1,i]] = 1
+        self.label = labels
+        idx = self.loaded_file_listWidget.currentRow()
+        self.Labels[idx] = self.label
+        self.cs_spans_all[idx] = self.cs_spans
+        print(self.cs_spans_all)
+        # self.Labels.append(labels)
 
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
