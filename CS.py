@@ -292,6 +292,7 @@ def detect_CS(weights_name, LFP, High_passed, output_name = None,  sampling_freq
     Prob = None
     cs_onset=np.argwhere(np.diff(Prediction)==1);
     cs_offset=np.argwhere(np.diff(Prediction)==-1);
+    print(cs_onset.shape)
     cs_onset = np.concatenate(cs_onset)
     cs_offset = np.concatenate(cs_offset)
     cs_offset = cs_offset[cs_offset>cs_onset[0]]

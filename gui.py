@@ -1,7 +1,7 @@
 
 # from typing import List, Any
 
-from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
+from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QSizePolicy, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
                              QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar)
 from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
@@ -17,7 +17,7 @@ import scipy.io as sp
 from scipy.ndimage import gaussian_filter1d
 import numpy as np
 import sys
-from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat
+from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat, create_random_intervals, concatenate_segments
 import uneye
 
 # from IPython import embed; 
@@ -80,10 +80,11 @@ class Content(QWidget):
         self.LFP = []
         self.HIGH = []
         self.Labels = []
-        self.Interval_inspected = []
+        self.Intervals_inspected = []
         self.upload_LFP = []
         self.upload_HIGH = []
         self.label = []
+        self.interval_inspected = []
         self.upload_fileName = []
         self.fileNames = []
         self.PC_Counter = 0
@@ -152,7 +153,12 @@ class Content(QWidget):
 
         # List of loaded files
         self.loaded_file_listWidget = QListWidget() 
-        print('width:',self.loaded_file_listWidget)
+        self.loaded_file_listWidget.setFixedHeight(self.loaded_files_box.height()-70)
+        # self.loaded_file_listWidget.setStyleSheet('border: 1px solid red;')
+        # self.loaded_file_listWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        print(self.loaded_file_listWidget.height())
+
+        self.loaded_file_listWidget.update()
         
         # Add groupboxes to first tab
         self.create_data_input_box()
@@ -301,7 +307,7 @@ class Content(QWidget):
         upload_button.setToolTip('Upload and plot the first file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
         
-        setting_button = QPushButton("Setting")
+        setting_button = QPushButton("Set parameters")
         setting_button.clicked.connect(self.open_setting_box)
 
         data_input_layout.addWidget(setting_button)
@@ -327,7 +333,7 @@ class Content(QWidget):
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
         layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
-        layout.addRow(QLabel("High pass AP variable name"), self.set_HighVarname())
+        layout.addRow(QLabel("High-passed action potential variable name"), self.set_HighVarname())
         layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
         layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
@@ -368,15 +374,16 @@ class Content(QWidget):
         button_widget.setLayout(button_layout)
         
         button_widget.setFixedHeight(70)
-        height = self.loaded_files_box.height()-button_widget.height()
-        self.loaded_file_listWidget.setFixedHeight(height)
-        print(self.loaded_file_listWidget.height())
-        print(self.loaded_files_box.height())
-        print(button_widget.height())
+        # button_widget.setStyleSheet('border: 1px solid red;')
+        # height = self.loaded_files_box.height()-button_widget.height()
+        # # self.loaded_file_listWidget.setFixedHeight(height)
+        # print(self.loaded_file_listWidget.height())
+        # print(self.loaded_files_box.height())
+        # print(button_widget.height())
         layout.addWidget(self.loaded_file_listWidget)
         layout.addStretch()
         layout.addWidget(button_widget)
-        button_widget.sizeHint()
+        # button_widget.sizeHint()
         
         self.loaded_files_box.setLayout(layout)
         self.loaded_files_box.update()
@@ -468,6 +475,7 @@ class Content(QWidget):
         self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
         self.upload_LFP = np.array(mat[self.LFP_varname][0])
         self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
+        self.interval_inspected = np.zeros_like(self.upload_LFP)
         self.cs_span = np.zeros(2)
         self.cs_spans = np.array([[]])
         self.cs_patch = []
@@ -476,6 +484,7 @@ class Content(QWidget):
         self.HIGH.append(self.upload_HIGH)
         self.Labels.append(self.label)
         self.cs_spans_all.append(self.cs_spans)
+        self.Intervals_inspected.append(self.interval_inspected)
         self.plot_data()
         self.create_loaded_files_box()
 
@@ -486,11 +495,30 @@ class Content(QWidget):
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
-            self.create_labels()
+            bigLFP = []
+            bigHIGH = []
+            bigLabels = []
+            for i in range(len(self.ID)):
+                print(i)
+                print(self.LFP[i])
+                print(self.Intervals_inspected[i])
+                lfp_norm = norm_LFP(self.LFP[i],self.sampling_rate)
+                high_norm = norm_high_pass(self.HIGH[i])
+                compLFP,compHIGH,compLabels = concatenate_segments(lfp_norm, high_norm, self.Intervals_inspected[i], self.Labels[i])
+                bigLFP = np.concatenate((bigLFP,compLFP))
+                bigHIGH = np.concatenate((bigHIGH,compHIGH))
+                bigLabels = np.concatenate((bigLabels,compLabels))
+            # sp.savemat(fileName, {'ID': np.array(self.ID, dtype=object),
+            #                       'LFP': self.LFP,
+            #                       'HIGH': self.HIGH,
+            #                       'Labels': self.Labels,
+            #                       'sampling_rate': self.sampling_rate}, do_compression=True)
             sp.savemat(fileName, {'ID': np.array(self.ID, dtype=object),
-                                  'LFP': self.LFP,
-                                  'HIGH': self.HIGH,
-                                  'Labels': self.Labels}, do_compression=True)
+                                  'LFP': bigLFP,
+                                  'HIGH': bigHIGH,
+                                  'Labels': bigLabels,
+                                  'sampling_rate': self.sampling_rate}, do_compression=True)
+
 
     def open_Colab(self):
         # QDesktopServices.openUrl(QUrl('https://colab.research.google.com/drive/1g1MzZz5h30Uov9tIbrarwwm02WD7xU6B#scrollTo=plKVE-vH_SLt'))
@@ -747,6 +775,9 @@ class Content(QWidget):
         idx = self.loaded_file_listWidget.currentRow()
         self.Labels[idx] = self.label
         self.cs_spans_all[idx] = self.cs_spans
+        
+        self.interval_inspected = create_random_intervals(self.sampling_rate, self.upload_LFP, self.label)
+        self.Intervals_inspected[idx] = self.interval_inspected
         print(self.cs_spans_all)
         # self.Labels.append(labels)
 
@@ -888,7 +919,7 @@ class Content(QWidget):
         # show_data_layout = QGridLayout()
         show_data_layout = QVBoxLayout()
         
-        setting_button = QPushButton("Setting")
+        setting_button = QPushButton("Set parameters")
         setting_button.clicked.connect(self.open_setting_box2)
         
         load_file_button = QPushButton("Load PC recording")
@@ -948,7 +979,7 @@ class Content(QWidget):
         
     def open_setting_box2(self):
         dialog = QDialog()
-        dialog.setWindowTitle("Setting")
+        dialog.setWindowTitle("Set parameters")
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
@@ -1063,7 +1094,7 @@ class Content(QWidget):
         navi = QWidget()
         toolbar = NavigationToolbar(self.canvas2, self)
         
-        setting_button = QPushButton("Setting")
+        setting_button = QPushButton("Setting for plot")
         setting_button.clicked.connect(self.open_setting_box2)
         
         plotting_button = QPushButton('Plot data')
