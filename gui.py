@@ -277,6 +277,8 @@ class Content(QWidget):
         next_cs_button = QPushButton("Next CS (V)")
         next_cs_button.clicked.connect(self.go_to_next_CS)
         next_cs_button.setMinimumWidth(minWidth)
+        self.cs_counter = QLabel()
+        self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
         
         scale_widget = QWidget()
         scale_layout = QHBoxLayout()
@@ -291,6 +293,7 @@ class Content(QWidget):
         cs_widget = QWidget()
         cs_layout = QHBoxLayout()
         cs_layout.addStretch()
+        cs_layout.addWidget(self.cs_counter)
         cs_layout.addWidget(prev_cs_button)
         cs_layout.addWidget(next_cs_button)  
         cs_widget.setLayout(cs_layout)
@@ -427,6 +430,7 @@ class Content(QWidget):
             print(self.ID[idx])
             print('self.cs_spans',self.cs_spans)
             self.plot_data()
+            self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
     
     def create_after_labeling_box(self):
         after_labeling_layout = QHBoxLayout()
@@ -570,12 +574,6 @@ class Content(QWidget):
         self.canvas.mpl_connect('button_release_event', self.set_cs_offset)
     
     # Selecting CS 
-    # def on_draw(self, event):
-    #     # self.xlim = self.axes.get_xlim()
-    #     self.canvas.lfp_axes.set_ylim(self.canvas_ylim)
-    #     print(self.canvas.high_axes.get_ylim())
-    #     self.canvas.draw_idle()
-    
     def click_control(self, event):
         if self.canvas.high_axes.patches:
             # for i in range(self.cs_spans.T.shape[0]):
@@ -631,22 +629,17 @@ class Content(QWidget):
             cs_spans = np.vstack((onset, offset))
             
             idx = np.argsort(onset)
-            print('cs_spans',cs_spans, cs_spans.shape)
-            # print('cs_spans[:,[idx]]',cs_spans[:,[idx]], cs_spans.shape, idx)
             self.cs_spans = cs_spans[:, idx].astype(int)
             print('self.cs_spans',self.cs_spans, self.cs_spans.shape, np.argsort(onset))
             self.create_labels()
-        
+            self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
+            
     def setupSlider(self, minimum, maximum, step, x0=0):
-        # self.scroll = QScrollBar(Qt.Horizontal)
-        # self.lims = np.array(self.canvas.lfp_axes.get_xlim())
-        print('setupSlider', self.lims)
+        # print('setupSlider', self.lims)
         self.scroll.setMinimum(minimum)
         self.scroll.setMaximum(maximum)
         self.scroll.setPageStep(step)
         self.scroll.setValue(x0)
-        # self.scroll.update()
-        # self.scroll.actionTriggered.connect(self.zoom_update)
         try:
             self.scroll.valueChanged.disconnect()
         except:
