@@ -232,13 +232,6 @@ class Content(QWidget):
         select_cs_layout.setColumnStretch(0, 0)
         select_cs_layout.setColumnStretch(1, 0)
         
-        widget1 = QWidget()
-        layout1 = QGridLayout()
-        
-        toolbar = NavigationToolbar(self.canvas, self)
-        
-        # layout1.addWidget(toolbar, 0, 0)
-        
         widget2 = QWidget()
         layout2 = QGridLayout()
 
@@ -260,38 +253,57 @@ class Content(QWidget):
         layout2.addWidget(save_button, 1,1)
         widget2.setLayout(layout2)
         
-        # layout1.addWidget(widget2, 0, 1)
-        widget1.setLayout(layout1)
+        minWidth = 150
         
-        max_button = QPushButton("Full")
+        max_button = QPushButton("Full (Q)")
         max_button.clicked.connect(self.set_max_xlim)
-        second_button = QPushButton("1s")
+        max_button.setMinimumWidth(minWidth)
+        second_button = QPushButton("1s (W)")
         second_button.clicked.connect(lambda: self.set_zoom_xlim(1.0))
-        millisecond_button = QPushButton("50ms")
+        second_button.setMinimumWidth(minWidth)
+        millisecond_button = QPushButton("50ms (R)")
         millisecond_button.clicked.connect(lambda: self.set_zoom_xlim(0.05))
-        zoomin_button = QPushButton("Zoom in")
-        zoomin_button.clicked.connect(lambda: self.zoom(2/3))
-        zoomout_button = QPushButton("Zoom out")
-        zoomout_button.clicked.connect(lambda: self.zoom(3/2))
-        prev_cs_button = QPushButton("Previous CS")
+        millisecond_button.setMinimumWidth(minWidth)
+        self.zoom_ratio = 2/3
+        zoomin_button = QPushButton("Zoom in (R)")
+        zoomin_button.clicked.connect(lambda: self.zoom(self.zoom_ratio))
+        zoomin_button.setMinimumWidth(minWidth)
+        zoomout_button = QPushButton("Zoom out (T)")
+        zoomout_button.clicked.connect(lambda: self.zoom(1/self.zoom_ratio))
+        zoomout_button.setMinimumWidth(minWidth)
+        prev_cs_button = QPushButton("Previous CS (C)")
         prev_cs_button.clicked.connect(self.go_to_prev_CS)
-        next_cs_button = QPushButton("Next CS")
+        prev_cs_button.setMinimumWidth(minWidth)
+        next_cs_button = QPushButton("Next CS (V)")
         next_cs_button.clicked.connect(self.go_to_next_CS)
+        next_cs_button.setMinimumWidth(minWidth)
         
-        ctrl_layout = QHBoxLayout()
-        ctrl_layout.addWidget(max_button)
-        ctrl_layout.addWidget(second_button)
-        ctrl_layout.addWidget(millisecond_button)
-        ctrl_layout.addWidget(zoomin_button)
-        ctrl_layout.addWidget(zoomout_button)
-        ctrl_layout.addWidget(prev_cs_button)
-        ctrl_layout.addWidget(next_cs_button)
+        scale_widget = QWidget()
+        scale_layout = QHBoxLayout()
+        scale_layout.addStretch()
+        scale_layout.addWidget(max_button)
+        scale_layout.addWidget(second_button)
+        scale_layout.addWidget(millisecond_button)
+        scale_layout.addWidget(zoomin_button)
+        scale_layout.addWidget(zoomout_button)
+        scale_widget.setLayout(scale_layout)
+        
+        cs_widget = QWidget()
+        cs_layout = QHBoxLayout()
+        cs_layout.addStretch()
+        cs_layout.addWidget(prev_cs_button)
+        cs_layout.addWidget(next_cs_button)  
+        cs_widget.setLayout(cs_layout)
+
+        ctrl_layout = QVBoxLayout()
+        ctrl_layout.addWidget(scale_widget)
+        ctrl_layout.addWidget(cs_widget)
+        
         ctrl = QWidget()
         ctrl.setLayout(ctrl_layout)
 
-        select_cs_layout.addWidget(widget1, 0, 0)
-        select_cs_layout.addWidget(ctrl, 1, 0)
-        select_cs_layout.addWidget(self.canvas, 2, 0)
+        select_cs_layout.addWidget(ctrl, 0, 0)
+        select_cs_layout.addWidget(self.canvas, 1, 0)
         self.scroll = QScrollBar(Qt.Horizontal)
         self.step = 20
         # self.setupSlider(0, 0, 0)
@@ -717,6 +729,26 @@ class Content(QWidget):
                 self.canvas.lfp_axes.set_xlim([self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2])
                 self.canvas.draw_idle()
                 # self.set_zoom_xlim(width)
+                
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_R:
+            self.zoom(self.zoom_ratio)
+        elif event.key() == Qt.Key_T:
+            self.zoom(1/self.zoom_ratio)
+        elif event.key()==Qt.Key_F:
+            self.scroll.setValue(self.scroll.value() + 1)
+        elif event.key()==Qt.Key_S:
+            self.scroll.setValue(self.scroll.value() - 1)
+        elif event.key() == Qt.Key_Q:
+            self.set_max_xlim()
+        elif event.key() == Qt.Key_W:
+            self.set_zoom_xlim(1.0)
+        elif event.key() == Qt.Key_E:
+            self.set_zoom_xlim(0.05)
+        elif event.key() == Qt.Key_C:
+            self.go_to_prev_CS()
+        elif event.key() == Qt.Key_V:
+            self.go_to_next_CS()
 
     # activates span selection
     def select_cs(self):
