@@ -101,6 +101,8 @@ class Content(QWidget):
         self.detect_HIGH = []
         self.weights = []
         self.output = []
+        self.outputName = "No output"
+        self.detect_fileName = "No file"
         self.CS_onset = []
         self.CS_offset = []
         self.cluster_ID = []
@@ -207,16 +209,19 @@ class Content(QWidget):
 
         # Groupboxes
         # self.select_show_data_box = QGroupBox("Select clusters to show")
+        self.load_files_for_plot_box = QGroupBox("Load files for plot")
         self.select_show_data_box = QWidget()
         self.cluster_plotting_box = QGroupBox("Plotting")
 
         # Add Groupboxes to third tab
+        self.create_load_files_for_plot_box()
         self.create_show_data_box()
         self.create_cluster_plotting_box()
 
         # Layout for third tab
-        self.tab_postprocessing.layout.addWidget(self.select_show_data_box, 0, 0)
-        self.tab_postprocessing.layout.addWidget(self.cluster_plotting_box, 0, 1)
+        self.tab_postprocessing.layout.addWidget(self.load_files_for_plot_box, 0, 0, 1, 2)
+        self.tab_postprocessing.layout.addWidget(self.select_show_data_box, 1, 0)
+        self.tab_postprocessing.layout.addWidget(self.cluster_plotting_box, 1, 1)
 
         self.tab_postprocessing.setLayout(self.tab_postprocessing.layout)
 
@@ -390,11 +395,8 @@ class Content(QWidget):
         
         button_widget.setFixedHeight(70)
         # button_widget.setStyleSheet('border: 1px solid red;')
-        # height = self.loaded_files_box.height()-button_widget.height()
-        # # self.loaded_file_listWidget.setFixedHeight(height)
-        # print(self.loaded_file_listWidget.height())
-        # print(self.loaded_files_box.height())
-        # print(button_widget.height())
+        height = self.loaded_files_box.height()-button_widget.height()-60
+        self.loaded_file_listWidget.setFixedHeight(height)
         layout.addWidget(self.loaded_file_listWidget)
         layout.addStretch()
         layout.addWidget(button_widget)
@@ -809,29 +811,33 @@ class Content(QWidget):
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
+        width = 500
         detect_cs_layout = QGridLayout()
         detect_cs_layout.setColumnStretch(0, 0)
         detect_cs_layout.setColumnStretch(1, 0)
 
         detect_upload_button = QPushButton("Upload a PC recording")
         detect_upload_button.clicked.connect(self.upload_detection_file)
-
-        # simple_spike_button = QPushButton("Enter SS data name")
-        # simple_spike_button.clicked.connect(self.get_simpleSpikes)
-
-        # SS_sampling_button = QPushButton("Enter SS sampling rate")
-        # SS_sampling_button.clicked.connect(self.get_integerSS)
+        detect_upload_button.setFixedWidth(width)
+        
+        self.detect_upload_label = QLabel()
+        self.detect_upload_label.setText(self.detect_fileName)
 
         detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
         detect_upload_weights_button.clicked.connect(self.upload_weights)
+        detect_upload_weights_button.setFixedWidth(width)
+        
+        self.detect_upload_weights_label = QLabel()
+        self.detect_upload_weights_label.setText(self.outputName)
 
         detecting_button = QPushButton('Detect CS')
         detecting_button.clicked.connect(self.detect_CS_starter)
+        detecting_button.setFixedWidth(width)
 
         detect_cs_layout.addWidget(detect_upload_button, 0, 0)
-        # detect_cs_layout.addWidget(simple_spike_button, 1, 0)
-        # detect_cs_layout.addWidget(SS_sampling_button, 2, 0)
+        detect_cs_layout.addWidget(self.detect_upload_label, 0, 1)
         detect_cs_layout.addWidget(detect_upload_weights_button, 1, 0)
+        detect_cs_layout.addWidget(self.detect_upload_weights_label, 1, 1)
         detect_cs_layout.addWidget(detecting_button, 2, 0)
 
         self.detect_cs_box.setLayout(detect_cs_layout)
@@ -844,8 +850,7 @@ class Content(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload files for CS detection", "",
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         print(fileName)
-        self.fileName = fileName.split('.')[-2].split('/')[-1]
-        print(self.fileName)
+        
         if fileName:
             mat = sp.loadmat(fileName)
             self.detect_LFP = get_field_mat(mat,['RAW'])
@@ -853,6 +858,12 @@ class Content(QWidget):
             self.detect_HIGH = get_field_mat(mat, ['HIGH'])
             self.detect_HIGH = norm_high_pass(self.detect_HIGH)
             self.mat = mat
+            
+            ext = fileName.split('.')[-1]
+            self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+            print(self.detect_fileName)
+            self.load_file_label.setText(self.detect_fileName)
+            self.detect_upload_label.setText(self.detect_fileName)
 
     def get_simpleSpikes(self):
         text, okPressed = QInputDialog.getText(self, "Enter SS data name", "Your data:", QLineEdit.Normal, "SS")
@@ -872,6 +883,7 @@ class Content(QWidget):
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.weights = fileName
+            self.detect_upload_weights_label.setText(self.weights.split('/')[-1])
 
     def detect_CS_starter(self):
         runningbox = QMessageBox()
@@ -894,7 +906,7 @@ class Content(QWidget):
         cluster_size = np.zeros(n_clusters)
         cluster_ID_sorted = np.zeros_like(cluster_ID)
         for i in range(n_clusters):
-            cluster_size[i] =  sum(cluster_ID == clusters[i])
+            cluster_size[i] =  (cluster_ID == clusters[i]).sum()
         print(clusters, n_clusters, cluster_size)
         clusters_sorted_idx = np.argsort(cluster_size)[::-1]
         cluster_size_sorted = np.sort(cluster_size)[::-1]
@@ -916,14 +928,21 @@ class Content(QWidget):
     def save_detectFileDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.fileName+'_output.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.detect_fileName.split('.')[-2]+'_output.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
+        print('self.detect_fileName',self.detect_fileName)
+        print('fileName',fileName)
         if fileName:
             sp.savemat(fileName, {'CS_onset': self.CS_onset,
                                   'CS_offset': self.CS_offset,
                                   'cluster_ID': self.cluster_ID,
                                   'embedding': self.embedding}, do_compression=True)
+            
+            ext =  fileName.split('.')[-1]
+            self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+            
+            self.load_output_label.setText(self.outputName)
 
     # FUNCTIONS THIRD TAB
     def align_spikes(self, spikes, alignment, l1=300, l2=300):
@@ -940,8 +959,49 @@ class Content(QWidget):
         
         return spikes_aligned       
     
+    def create_load_files_for_plot_box(self):
+        width = 250
+        load_file_widget = QWidget()
+        load_file_layout = QHBoxLayout()
+        load_file_layout.setContentsMargins(10, 10, 10, 0)
+        load_file_layout.setSpacing(10)
+        load_file_button = QPushButton("Load PC recording")
+        load_file_button.clicked.connect(self.upload_detection_file)
+        load_file_button.setFixedWidth(width)
+        
+        self.load_file_label = QLabel(self.detect_fileName)
+        load_file_layout.addWidget(load_file_button)
+        load_file_layout.addWidget(self.load_file_label)
+        load_file_widget.setLayout(load_file_layout)        
+        
+        load_output_widget = QWidget()
+        load_output_layout = QHBoxLayout()
+        load_output_layout.setContentsMargins(10, 10, 10, 10)
+        load_output_layout.setSpacing(10)
+        load_output_button = QPushButton("Load output")
+        load_output_button.clicked.connect(self.open_OutputDialog)
+        load_output_button.setFixedWidth(width)
+        
+        self.load_output_label = QLabel(self.outputName)
+        load_output_layout.addWidget(load_output_button)
+        load_output_layout.addWidget(self.load_output_label)
+        load_output_widget.setLayout(load_output_layout)
+
+        # load_box_layout = QVBoxLayout()
+        # load_box_layout.addWidget(load_file_button)
+        # # load_box_layout.addWidget(loaded_file_widget)
+        # load_box_layout.addWidget(load_output_button)
+        
+        load_box_layout = QVBoxLayout()
+        load_box_layout.addWidget(load_file_widget)
+        load_box_layout.addWidget(load_output_widget)
+        load_box_layout.setContentsMargins(0,0,0,0) 
+        load_box_layout.setSpacing(0)
+        self.load_files_for_plot_box.setLayout(load_box_layout)
+        # self.load_files_for_plot_box.setStyleSheet("border: 1px solid black;")
+                
+        
     def create_show_data_box(self):
-        # show_data_layout = QGridLayout()
         show_data_layout = QVBoxLayout()
         
         setting_button = QPushButton("Set parameters")
@@ -950,11 +1010,15 @@ class Content(QWidget):
         load_file_button = QPushButton("Load PC recording")
         load_file_button.clicked.connect(self.upload_detection_file)
         
+        loaded_file_widget = QListWidget()
+        loaded_file_widget.setFixedHeight(34)
+        print('height',load_file_button.sizeHint())
+        
         load_output_button = QPushButton("Load output")
         load_output_button.clicked.connect(self.open_OutputDialog)
 
-        plotting_button = QPushButton('Plot data')
-        plotting_button.clicked.connect(self.plot_detected_data)
+        # plotting_button = QPushButton('Plot data')
+        # plotting_button.clicked.connect(self.plot_detected_data)
 
         saving_button = QPushButton('Save selected cluster data')
         saving_button.clicked.connect(self.save_selected_cluster)
@@ -971,20 +1035,11 @@ class Content(QWidget):
         layout.addStretch()
         
         select_widget.setLayout(layout)
-        # show_data_layout.addWidget(plotting_button, 0, 0)
-        # show_data_layout.addWidget(select_widget, 1, 0)
-        # show_data_layout.addWidget(saving_button, 2, 0)
-        
-        # show_data_layout.addWidget(setting_button)
-        # show_data_layout.addWidget(load_file_button)
-        # show_data_layout.addWidget(load_output_button)
-        # show_data_layout.addWidget(plotting_button)
-        # show_data_layout.addWidget(select_widget)
-        # show_data_layout.addWidget(saving_button)
         
         load_box = QGroupBox("Load files")
         load_box_layout = QVBoxLayout()
         load_box_layout.addWidget(load_file_button)
+        load_box_layout.addWidget(loaded_file_widget)
         load_box_layout.addWidget(load_output_button)
         load_box.setLayout(load_box_layout)
         
@@ -995,7 +1050,7 @@ class Content(QWidget):
 
         select_cluster_box.setLayout(select_cluster_box_layout)
         
-        show_data_layout.addWidget(load_box)
+        # show_data_layout.addWidget(load_box)
         show_data_layout.addWidget(select_cluster_box)
 
         self.select_show_data_box.setLayout(show_data_layout)
@@ -1048,6 +1103,9 @@ class Content(QWidget):
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.upload_output(fileName)
+            ext = fileName.split('.')[-1]
+            self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+            self.load_output_label.setText(self.detect_fileName)
         
     def upload_output(self, fileName):
         output = sp.loadmat(fileName)
@@ -1063,9 +1121,8 @@ class Content(QWidget):
         n_clusters = len(clusters)
         cluster_size = np.zeros(n_clusters)
         cluster_ID_sorted = np.zeros_like(cluster_ID)
-        print(cluster_ID, clusters)
         for i in range(n_clusters):
-            cluster_size[i] =  sum(cluster_ID == clusters[i])
+            cluster_size[i] =  (cluster_ID == clusters[i]).sum()
         print(clusters, n_clusters, cluster_size)
         clusters_sorted_idx = np.argsort(cluster_size)[::-1]
         cluster_size_sorted = np.sort(cluster_size)[::-1]
@@ -1116,6 +1173,7 @@ class Content(QWidget):
 
     def create_cluster_plotting_box(self):
         cluster_plotting_layout = QGridLayout()
+        
         navi = QWidget()
         toolbar = NavigationToolbar(self.canvas2, self)
         
@@ -1131,7 +1189,7 @@ class Content(QWidget):
         navi_layout.addWidget(toolbar)
         navi.setLayout(navi_layout)
         
-        cluster_plotting_layout.addWidget(navi, 0, 0)
+        cluster_plotting_layout.addWidget(navi, 1, 0)
         cluster_plotting_layout.addWidget(self.canvas2, 2, 0)
 
         self.cluster_plotting_box.setLayout(cluster_plotting_layout)
@@ -1145,7 +1203,6 @@ class Content(QWidget):
         embedding = self.embedding
         n_clusters = self.n_clusters
 
-        #TODO: Different colors for different clusters, coorect plotting
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
         self.canvas2.CS_clusters.cla()
@@ -1228,7 +1285,7 @@ class Content(QWidget):
     def save_selected_cluster(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.fileName+'_clusters.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.detect_fileName+'_clusters.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
