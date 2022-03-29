@@ -266,7 +266,7 @@ class Content(QWidget):
         second_button = QPushButton("1s (W)")
         second_button.clicked.connect(lambda: self.set_zoom_xlim(1.0))
         second_button.setMinimumWidth(minWidth)
-        millisecond_button = QPushButton("50ms (R)")
+        millisecond_button = QPushButton("50ms (E)")
         millisecond_button.clicked.connect(lambda: self.set_zoom_xlim(0.05))
         millisecond_button.setMinimumWidth(minWidth)
         self.zoom_ratio = 2/3
@@ -565,7 +565,7 @@ class Content(QWidget):
         self.canvas.high_axes.set_ylabel('High-pass signal')
         self.canvas.lfp_axes.plot(self.t, raw_data, 'tab:blue', lw=0.4)
         self.canvas.lfp_axes.set_xlim([0, self.t[-1]])
-        self.canvas.lfp_axes.set_ylabel('Low field potential')
+        self.canvas.lfp_axes.set_ylabel('Local field potential')
         self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.high_axes.set_title(self.upload_fileName)
         self.canvas.draw()
