@@ -124,7 +124,7 @@ class Content(QWidget):
 
         # Initialize tab screen
         self.tabs = QTabWidget()
-        self.tab_preprocessing = QWidget()
+        self.tab_label_data = QWidget()
         self.tab_train = QWidget()
         self.tab_detect = QWidget()
         self.tab_postprocessing = QWidget()
@@ -138,12 +138,12 @@ class Content(QWidget):
         self.canvas2.setParent(self)
 
         # Add tabs
-        self.tabs.addTab(self.tab_preprocessing, "Pre-processing")
+        self.tabs.addTab(self.tab_label_data, "Label data")
         self.tabs.addTab(self.tab_detect, "Detect CS")
         self.tabs.addTab(self.tab_postprocessing, "Post-processing")
 
         # Create first tab
-        self.tab_preprocessing.layout = QGridLayout(self)
+        self.tab_label_data.layout = QGridLayout(self)
 
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
@@ -180,14 +180,14 @@ class Content(QWidget):
         layout.addWidget(self.after_labeling_box, 4, 0)
         left_panel.setLayout(layout)
         # self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 1)
-        self.tab_preprocessing.layout.addWidget(left_panel, 0, 0)
-        self.tab_preprocessing.layout.addWidget(self.select_cs_box, 0, 1)
-        self.tab_preprocessing.layout.setColumnStretch(0, 4)
-        self.tab_preprocessing.layout.setRowStretch(0, 0)
-        self.tab_preprocessing.layout.setRowStretch(1, 4)
+        self.tab_label_data.layout.addWidget(left_panel, 0, 0)
+        self.tab_label_data.layout.addWidget(self.select_cs_box, 0, 1)
+        self.tab_label_data.layout.setColumnStretch(0, 4)
+        self.tab_label_data.layout.setRowStretch(0, 0)
+        self.tab_label_data.layout.setRowStretch(1, 4)
 
         # self.tab_preprocessing.layout.setRowStretch(0, 4)
-        self.tab_preprocessing.setLayout(self.tab_preprocessing.layout)
+        self.tab_label_data.setLayout(self.tab_label_data.layout)
 
         # Create second tab
         self.tab_detect.layout = QGridLayout(self)
