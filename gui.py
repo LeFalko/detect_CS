@@ -155,7 +155,7 @@ class Content(QWidget):
         # self.information_box = QGroupBox("Please note:")
         self.save_box = QGroupBox("Save training data")
         self.loaded_files_box = QGroupBox("Loaded files")
-        self.select_cs_box = QGroupBox("Select complex spikes")
+        self.select_cs_box = QGroupBox("Select CSs")
         self.after_labeling_box = QGroupBox("After labeling")
 
         # List of loaded files
@@ -290,14 +290,21 @@ class Content(QWidget):
         self.cs_counter = QLabel()
         self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
         
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(30, 30))
+        info_label.setToolTip(self.info_select_CS())
+        
         scale_widget = QWidget()
         scale_layout = QHBoxLayout()
+        scale_layout.addWidget(info_label)
         scale_layout.addStretch()
         scale_layout.addWidget(max_button)
         scale_layout.addWidget(second_button)
         scale_layout.addWidget(millisecond_button)
         scale_layout.addWidget(zoomin_button)
         scale_layout.addWidget(zoomout_button)
+        scale_layout.setContentsMargins(0,0,0,0)
         scale_widget.setLayout(scale_layout)
         
         cs_widget = QWidget()
@@ -305,15 +312,18 @@ class Content(QWidget):
         cs_layout.addStretch()
         cs_layout.addWidget(self.cs_counter)
         cs_layout.addWidget(prev_cs_button)
-        cs_layout.addWidget(next_cs_button)  
+        cs_layout.addWidget(next_cs_button)
+        cs_layout.setContentsMargins(0,0,0,0)
         cs_widget.setLayout(cs_layout)
 
         ctrl_layout = QVBoxLayout()
         ctrl_layout.addWidget(scale_widget)
         ctrl_layout.addWidget(cs_widget)
+        ctrl_layout.setContentsMargins(0,0,0,0)
         
         ctrl = QWidget()
         ctrl.setLayout(ctrl_layout)
+        # ctrl.setStyleSheet('border: 1px solid red;')
 
         select_cs_layout.addWidget(ctrl, 0, 0)
         select_cs_layout.addWidget(self.canvas, 1, 0)
@@ -326,20 +336,39 @@ class Content(QWidget):
 
     # creating a box in the first tab containing sampling rate input and file upload
     def create_data_input_box(self):
-        data_input_layout = QVBoxLayout()
+        data_input_layout = QHBoxLayout()
+        
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_data_input())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        # info_label.setStyleSheet('border: 1px solid blue;')
         
         upload_button = QPushButton("Add PC for manual labeling")
-        upload_button.setToolTip('Upload and plot the first file for labeling')
+        upload_button.setToolTip('Upload and plot a file for labeling')
         upload_button.clicked.connect(self.openFileNameDialog)
         
         setting_button = QPushButton("Set parameters")
         setting_button.clicked.connect(self.open_setting_box)
-
-        data_input_layout.addWidget(setting_button)
-        data_input_layout.addWidget(upload_button)
+        
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(setting_button)
+        layout.addWidget(upload_button)
+        layout.setContentsMargins(0,0,10,10)
+        widget.setLayout(layout)
+        data_input_layout.addWidget(info_label)
+        data_input_layout.addWidget(widget)
+        data_input_layout.setSpacing(0)
+        data_input_layout.setContentsMargins(0,10,0,10)
+        
 
         self.data_input_box.setLayout(data_input_layout)
-        
+        # self.data_input_box.setStyleSheet('border: 1px solid blue;')
+
     def create_save_box(self):
         save_layout = QVBoxLayout()
         
@@ -443,11 +472,23 @@ class Content(QWidget):
         after_labeling_layout = QHBoxLayout()
         
         goto_Colab_button = QPushButton("TRAIN ALGORITHM")
-        goto_Colab_button.setToolTip('Plase finish labeling data before going to Colab')
+        goto_Colab_button.setToolTip('Please finish labeling data before going to Colab')
         goto_Colab_button.clicked.connect(self.open_Colab)
         goto_Colab_button.setIcon(QIcon(('./img/colab_logo.png')))
         
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_after_labeling())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        # info_label.setStyleSheet('border: 1px solid blue;')
+        
+        after_labeling_layout.addWidget(info_label)
         after_labeling_layout.addWidget(goto_Colab_button)
+        after_labeling_layout.setSpacing(0)
+        after_labeling_layout.setContentsMargins(0,10,0,10)
         
         self.after_labeling_box.setLayout(after_labeling_layout)
     
@@ -820,11 +861,38 @@ class Content(QWidget):
         self.Intervals_inspected[idx] = self.interval_inspected
         print(self.cs_spans_all)
         # self.Labels.append(labels)
+        
+    # explanation texts for first tab
+    def info_data_input(self):
+        text1 = '1. Set initial parameters for labeling CSs. \n'
+        text2 = """2. Upload your recordings. 
+        It should be stored in .mat
+        and contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
+        If no LFP signal is available, you can try creating two identical high-passed action potentials.
+        """
+        return text1 + text2
+    
+    def info_after_labeling(self):
+        text1 = """After saving the CS labels:
+            clicking this button leads you to Google Colab to train the network. 
+            Google Colab provides free computing including GPU.
+        """
+        return text1
+    
+    def info_select_CS(self):
+        text = """Zoom the recoding and drag-select onset & offset of CSs. \nTo delete the selection, click the selected area. \nAs a rule of thumb, you need to select ~10 CSs per cell.\n\n """ 
+        
+        keybord = """Keyboard shortcut: 
+        Set a range : full->Q, 1s->W, 1ms->E 
+        Zoom in->R, zoom out->T
+        Move forward->F, move backward->S
+        Go to previous CS->C, go to next CS->V"""
+        return text + keybord
 
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
-        width = 500
+        width = 400
         detect_cs_layout = QGridLayout()
         detect_cs_layout.setColumnStretch(0, 0)
         detect_cs_layout.setColumnStretch(1, 0)
