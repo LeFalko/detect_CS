@@ -125,6 +125,7 @@ class Content(QWidget):
         self.cs_spans = np.array([])
         self.cs_spans_all = []
         self.cs_patch = []
+        self.cs_patch2 = []
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -501,6 +502,7 @@ class Content(QWidget):
         self.cs_span = np.zeros(2)
         self.cs_spans = np.array([[]])
         self.cs_patch = []
+        self.cs_patch2 = []
         self.ID.append(self.upload_fileName)
         self.LFP.append(self.upload_LFP)
         self.HIGH.append(self.upload_HIGH)
@@ -565,6 +567,7 @@ class Content(QWidget):
             print('cs_spans[i]',self.cs_spans[:, i])
             patch = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
             self.canvas.high_axes.add_patch(patch)
+            self.canvas.lfp_axes.add_patch(patch)
         self.canvas.high_axes.set_xlim([0, self.t[-1]])
         self.canvas.high_axes.set_ylabel('High-pass signal')
         self.canvas.lfp_axes.plot(self.t, raw_data, 'tab:blue', lw=0.4)
@@ -590,6 +593,7 @@ class Content(QWidget):
                 print('x1,x2,event.xdata',x1,x2,event.xdata)
                 if (event.xdata >= x1) and (event.xdata <= x2):  
                     self.canvas.high_axes.patches.pop(i)
+                    self.canvas.lfp_axes.patches.pop(i)
                     self.canvas.draw_idle()
                     self.get_all_patches()
                     return print('remove')
@@ -601,18 +605,22 @@ class Content(QWidget):
         self.cs_span[1] = event.xdata
         ylim = self.canvas.high_axes.get_ylim()
         self.cs_patch = patches.Rectangle((self.cs_span[0], ylim[0]), np.diff(self.cs_span), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
+        self.cs_patch2 = patches.Rectangle((self.cs_span[0], ylim[0]), np.diff(self.cs_span), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
         self.canvas.high_axes.add_patch(self.cs_patch)
+        self.canvas.lfp_axes.add_patch(self.cs_patch2)
         
     def draw_span(self, event):
         if self.is_clicked:
             self.cs_span[1] = event.xdata
             self.cs_patch.set_width(np.diff(self.cs_span))
+            self.cs_patch2.set_width(np.diff(self.cs_span))
             self.canvas.draw_idle()
         
     def set_cs_offset(self, event):
         if self.is_clicked:
             self.cs_span[1] = event.xdata
             self.cs_patch.set_width(np.diff(self.cs_span))
+            self.cs_patch2.set_width(np.diff(self.cs_span))
             
             if abs(np.diff(self.cs_span))<0.001: # if span is too short, it doesn't count
                 print('diff',self.cs_span[0],self.cs_span[1],event.xdata,abs(np.diff(self.cs_span)))
@@ -621,6 +629,7 @@ class Content(QWidget):
             self.is_clicked = False
             self.cs_span = np.empty(2)
             self.cs_patch = []
+            self.cs_patch2 = []
             self.get_all_patches()
         
     def get_all_patches(self):
