@@ -3,8 +3,8 @@
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QSizePolicy, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
-                             QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar)
-from PyQt5.QtGui import QPainter, QIcon, QDesktopServices, QPixmap
+                             QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar, QStyle)
+from PyQt5.QtGui import QIcon, QDesktopServices, QPixmap, QColor
 from PyQt5.QtCore import QUrl, QSize, Qt, QRect
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -110,6 +110,10 @@ class Content(QWidget):
         self.n_clusters = []
         self.ss_train = []
         self.sigma = 5
+        self.t1 = 5
+        self.t2 = 20
+        self.t1_ss = 50
+        self.t2_ss = 50
         # self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 
         #                'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
@@ -355,7 +359,7 @@ class Content(QWidget):
         layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
         layout.addRow(QLabel("High-passed action potential variable name"), self.set_HighVarname())
         layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
-        layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
+        # layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
         dialog.setLayout(layout)
         dialog.exec_()
@@ -470,14 +474,14 @@ class Content(QWidget):
         lineedit.textChanged.connect(changeText)
         return lineedit
     
-    def set_maxCSs(self):
-        def changeMaxCSs():
-            self.PC_Number = spinbox.value()
-        spinbox = QSpinBox()
-        spinbox.setRange(1, 20)
-        spinbox.setValue(self.PC_Number)
-        spinbox.valueChanged.connect(changeMaxCSs)
-        return spinbox
+    # def set_maxCSs(self):
+    #     def changeMaxCSs():
+    #         self.PC_Number = spinbox.value()
+    #     spinbox = QSpinBox()
+    #     spinbox.setRange(1, 20)
+    #     spinbox.setValue(self.PC_Number)
+    #     spinbox.valueChanged.connect(changeMaxCSs)
+    #     return spinbox
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -900,14 +904,25 @@ class Content(QWidget):
         embedding = output['embedding']
         print(cs_onset.shape, cluster_ID.shape, embedding.shape)
         
+        self.sort_clusters(cluster_ID)
+        
+        self.CS_onset = cs_onset
+        self.CS_offset = cs_offset
+        self.embedding = embedding
+
+        self.save_detectFileDialog()
+        
+    def sort_clusters(self, cluster_ID):
         # sort clusters by cluster size
         clusters = np.unique(cluster_ID)
         n_clusters = len(clusters)
         cluster_size = np.zeros(n_clusters)
         cluster_ID_sorted = np.zeros_like(cluster_ID)
+        print('clusters', clusters)
+        print('n_clusters', n_clusters)
         for i in range(n_clusters):
             cluster_size[i] =  (cluster_ID == clusters[i]).sum()
-        print(clusters, n_clusters, cluster_size)
+        print('cluster_size', cluster_size)
         clusters_sorted_idx = np.argsort(cluster_size)[::-1]
         cluster_size_sorted = np.sort(cluster_size)[::-1]
         for i in range(n_clusters):
@@ -915,15 +930,13 @@ class Content(QWidget):
         clusters_sorted = np.sort(np.unique(cluster_ID_sorted))
         print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
         
-        self.CS_onset = cs_onset
-        self.CS_offset = cs_offset
         self.cluster_ID = cluster_ID_sorted
-        self.embedding = embedding
+        self.cluster_ID_save = cluster_ID_sorted.copy()
         self.clusters = clusters_sorted
         self.n_clusters = n_clusters
         self.cluster_size = cluster_size_sorted
-
-        self.save_detectFileDialog()
+        self.clusters_selected = [i+1 for i in range(n_clusters)]
+        self.is_cluster_selected = [True for i in range(n_clusters)]
 
     def save_detectFileDialog(self):
         options = QFileDialog.Options()
@@ -1017,9 +1030,6 @@ class Content(QWidget):
         load_output_button = QPushButton("Load output")
         load_output_button.clicked.connect(self.open_OutputDialog)
 
-        # plotting_button = QPushButton('Plot data')
-        # plotting_button.clicked.connect(self.plot_detected_data)
-
         saving_button = QPushButton('Save selected cluster data')
         saving_button.clicked.connect(self.save_selected_cluster)
 
@@ -1050,7 +1060,6 @@ class Content(QWidget):
 
         select_cluster_box.setLayout(select_cluster_box_layout)
         
-        # show_data_layout.addWidget(load_box)
         show_data_layout.addWidget(select_cluster_box)
 
         self.select_show_data_box.setLayout(show_data_layout)
@@ -1065,7 +1074,34 @@ class Content(QWidget):
         layout = QFormLayout()
         layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
         layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
-        layout.addRow(QLabel("gaussian kernel size [ms]"), self.set_sigma())
+        layout.addRow(QLabel("Gaussian kernel size [ms]"), self.set_sigma())
+        
+        cs_xlim_widget = QWidget()
+        cs_xlim_layout = QHBoxLayout()
+        cs_xlim_layout.setContentsMargins(0,0,0,0)
+        cs_xlim_layout.addWidget(self.set_time_before_CS())
+        cs_xlim_layout.addStretch()
+        cs_xlim_layout.addWidget(QLabel('to'))
+        cs_xlim_layout.addStretch()
+        cs_xlim_layout.addWidget(self.set_time_after_CS())
+        cs_xlim_widget.setLayout(cs_xlim_layout)
+        cs_xlim_label = QLabel("Time range 1")
+        cs_xlim_label.setToolTip("Time range of action potential and LFP from CS onset")
+        
+        ss_xlim_widget = QWidget()
+        ss_xlim_layout = QHBoxLayout()
+        ss_xlim_layout.setContentsMargins(0,0,0,0)
+        ss_xlim_layout.addWidget(self.set_time_before_CS_for_SS())
+        ss_xlim_layout.addStretch()
+        ss_xlim_layout.addWidget(QLabel('to'))
+        ss_xlim_layout.addStretch()
+        ss_xlim_layout.addWidget(self.set_time_after_CS_for_SS())
+        ss_xlim_widget.setLayout(ss_xlim_layout)
+        ss_xlim_label = QLabel("Time range 2")
+        ss_xlim_label.setToolTip("Time range of SS from CS onset")
+        
+        layout.addRow(cs_xlim_label, cs_xlim_widget)
+        layout.addRow(ss_xlim_label, ss_xlim_widget)
         layout.addRow(ok_button)
         dialog.setLayout(layout)
         dialog.exec_()
@@ -1088,12 +1124,48 @@ class Content(QWidget):
         return lineedit
     
     def set_sigma(self):
-        def changeSamplingRate():
+        def changeSigma():
             self.sigma = spinbox.value()
         spinbox = QSpinBox()
         spinbox.setRange(1, 20)
         spinbox.setValue(self.sigma)
-        spinbox.valueChanged.connect(changeSamplingRate)
+        spinbox.valueChanged.connect(changeSigma)
+        return spinbox
+    
+    def set_time_before_CS(self):
+        def change():
+            self.t1 = -spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(-20, -1)
+        spinbox.setValue(-self.t1)
+        spinbox.valueChanged.connect(change)
+        return spinbox
+    
+    def set_time_after_CS(self):
+        def change():
+            self.t2 = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 20)
+        spinbox.setValue(self.t2)
+        spinbox.valueChanged.connect(change)
+        return spinbox
+    
+    def set_time_before_CS_for_SS(self):
+        def change():
+            self.t1_ss = -spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(-100, -1)
+        spinbox.setValue(-self.t1_ss)
+        spinbox.valueChanged.connect(change)
+        return spinbox
+    
+    def set_time_after_CS_for_SS(self):
+        def change():
+            self.t2_ss = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 100)
+        spinbox.setValue(self.t2_ss)
+        spinbox.valueChanged.connect(change)
         return spinbox
     
     def open_OutputDialog(self):
@@ -1109,57 +1181,62 @@ class Content(QWidget):
         
     def upload_output(self, fileName):
         output = sp.loadmat(fileName)
-
         cs_onset = output['CS_onset'].squeeze()
         cs_offset = output['CS_offset'].squeeze()
         cluster_ID = output['cluster_ID'].squeeze()
         embedding = output['embedding'].squeeze()
         print(cs_onset.shape, cluster_ID.shape, embedding.shape)
         
-        # sort clusters by cluster size
-        clusters = np.unique(cluster_ID)
-        n_clusters = len(clusters)
-        cluster_size = np.zeros(n_clusters)
-        cluster_ID_sorted = np.zeros_like(cluster_ID)
-        for i in range(n_clusters):
-            cluster_size[i] =  (cluster_ID == clusters[i]).sum()
-        print(clusters, n_clusters, cluster_size)
-        clusters_sorted_idx = np.argsort(cluster_size)[::-1]
-        cluster_size_sorted = np.sort(cluster_size)[::-1]
-        for i in range(n_clusters):
-            cluster_ID_sorted[cluster_ID==clusters[clusters_sorted_idx[i]]] = i+1
-        clusters_sorted = np.sort(np.unique(cluster_ID_sorted))
-        print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
-        
         self.CS_onset = cs_onset
         self.CS_offset = cs_offset
-        self.cluster_ID = cluster_ID_sorted
         self.embedding = embedding
-        self.clusters = clusters_sorted
-        self.n_clusters = n_clusters
-        self.cluster_size = cluster_size_sorted
+        
+        self.sort_clusters(cluster_ID)
         
     def add_checkbox(self):
-        
         self.checkbox_widget.setLayout(self.checkbox_layout)
 
     def generate_cluster_list(self):
         self.is_cluster_selected = []
+        self.combobox = []
         self.checkbutton = []
         self.checkbox_layout = QVBoxLayout()
         self.add_checkbox()
-        print(self.n_clusters)
+        print('n_clusters: ',self.n_clusters)
         if self.n_clusters:
             for i in range(self.n_clusters):
-                checkbox = QCheckBox("Cluster {} (n={})".format(i+1, self.cluster_size[i].astype(int)))
-                textcolor = 'color: ' + self.colors[i]
-                checkbox.setStyleSheet(textcolor)
+                checkbox = QCheckBox("n={}".format(self.cluster_size[i].astype(int)))
+                checkbox.setFixedWidth(80)
                 self.checkbutton.append(checkbox)
                 self.is_cluster_selected.append(True)
                 self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
                 self.checkbutton[i].setTristate(False)
-                self.checkbox_layout.addWidget(self.checkbutton[i])
+                combobox = QComboBox()
+                for j in range(self.n_clusters):
+                    color = QPixmap(50,50)
+                    color.fill(QColor(self.colors[j]))
+                    icon = QIcon(color)
+                    combobox.addItem(icon, 'cluster {}'.format(j+1))
+                combobox.setCurrentIndex(self.clusters[i]-1)
+                combobox.setFixedWidth(120)
+                combobox.setStyleSheet('selection-background-color: rgb(245, 245, 245); selection-color: rgb(0, 0, 0)')
+                self.combobox.append(combobox)
+                # textcolor = 'color: ' + self.colors[self.combobox[i].currentIndex()]
+                textcolor = 'color: black'
+                checkbox.setStyleSheet(textcolor + ';border: none;')
+                check_widget = QWidget()
+                check_layout = QHBoxLayout()
+                check_layout.addWidget(self.checkbutton[i])
+                check_layout.addWidget(self.combobox[i])
+                check_layout.setContentsMargins(0,0,0,0)
+                check_layout.setSpacing(0)
+                check_widget.setLayout(check_layout)
+                self.checkbox_layout.addWidget(check_widget)
                 self.checkbutton[i].toggled.connect(self.checkbutton_clicked)
+                self.clusters_selected[i] = self.combobox[i].currentIndex()+1
+            update_button = QPushButton("Update")
+            update_button.clicked.connect(self.update_clusters)
+            self.checkbox_layout.addWidget(update_button)
 
     def checkbutton_clicked(self):
         self.set_cluster_selected()
@@ -1169,7 +1246,6 @@ class Content(QWidget):
         n = len(self.checkbutton)
         for i in range(n):
             self.is_cluster_selected[i] = self.checkbutton[i].isChecked()
-
 
     def create_cluster_plotting_box(self):
         cluster_plotting_layout = QGridLayout()
@@ -1193,93 +1269,112 @@ class Content(QWidget):
         cluster_plotting_layout.addWidget(self.canvas2, 2, 0)
 
         self.cluster_plotting_box.setLayout(cluster_plotting_layout)
+        
+    def update_clusters(self):
+        for i in range(len(self.combobox)):
+            idx = self.cluster_ID == i + 1
+            self.cluster_ID_save[idx] = self.combobox[i].currentIndex()+1
+            self.clusters_selected[i] = self.combobox[i].currentIndex()+1
+        print('cluster_ID', self.cluster_ID)
+        print('cluster_ID_save', self.cluster_ID_save)
+        
+        self.plot_detected_data()
 
 
     def plot_detected_data(self):
 
-        cluster_ID = self.cluster_ID
+        cluster_ID = self.cluster_ID_save
         cs_offset = self.CS_offset
         cs_onset = self.CS_onset
         embedding = self.embedding
-        n_clusters = self.n_clusters
-
+        # n_clusters = self.n_clusters
+        for i in range(len(self.is_cluster_selected)):
+            if not self.is_cluster_selected[i]:
+                cluster_ID[self.cluster_ID == i+1] = 0
+        n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
+        print('n_clusters plot', n_clusters, len(cluster_ID), cluster_ID)
+        
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
         self.canvas2.CS_clusters.cla()
         self.canvas2.SS.cla()
         self.canvas2.ax2.cla()
 
-        for i in range(self.n_clusters):
+        print(self.is_cluster_selected)
+        print([np.where(np.array(self.is_cluster_selected)==True)[0]])
+        for i in range(n_clusters):
+        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
             idx = cluster_ID == i+1
             self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i])
         self.canvas2.CS_clusters.set_xlabel('Dimension 1')
         self.canvas2.CS_clusters.set_ylabel('Dimension 2')
         self.canvas2.CS_clusters.set_title('CS clusters', loc='left')
-        # self.canvas2.CS_clusters.get_xaxis().set_ticks([])
 
-        t1 = 5
-        t2 = 20
-        t = np.arange(-t1, t2, 1000/(self.sampling_rate+1))
+        t = np.arange(-self.t1, self.t2, 1000/(self.sampling_rate+1))
         p = 0.6
         wht = np.array([1., 1., 1., 1.])
+        
         # plot CS
-        cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
-        for i in range(self.n_clusters):
-            idx = cluster_ID == i+1
-            color = mplcolors.to_rgba_array(self.colors[i])
+        cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
+        for i in np.unique(cluster_ID[cluster_ID!=0]):
+            idx = cluster_ID == i
+            color = mplcolors.to_rgba_array(self.colors[i-1])
             self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
-        for i in range(self.n_clusters):
-            idx = cluster_ID == i+1
-            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
+        for i in np.unique(cluster_ID[cluster_ID!=0]):
+            idx = cluster_ID == i
+            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[i-1], lw=2)
+        self.canvas2.CS.set_xlim((-self.t1, self.t2))
         self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
         self.canvas2.CS.set_title('CS', loc='left')
         self.canvas2.CS.get_xaxis().set_ticks([])
         
         # plot LFP
-        lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=t1*int(self.sampling_rate/1000), l2=t2* int(self.sampling_rate/1000))
-        for i in range(self.n_clusters):
-            idx = cluster_ID == i+1
-            color = mplcolors.to_rgba_array(self.colors[i])
+        lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
+        # for i in range(self.n_clusters):
+        for i in np.unique(cluster_ID[cluster_ID!=0]):
+        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
+            idx = cluster_ID == i
+            color = mplcolors.to_rgba_array(self.colors[i-1])
             self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
-        for i in range(self.n_clusters):
-            idx = cluster_ID == i+1
-            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i], lw=2)
+        # for i in range(self.n_clusters):
+        for i in np.unique(cluster_ID[cluster_ID!=0]):
+        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
+            idx = cluster_ID == i
+            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i-1], lw=2)
+        self.canvas2.LFP.set_xlim((-self.t1, self.t2))
         self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
         self.canvas2.LFP.set_title('LFP', loc='left')
             
         # plot SS
         if self.SS_varname:
             
-            t1_ss = 50
-            t2_ss = 50
-            t_ss = np.arange(-t1_ss, t2_ss, 1000/(self.sampling_rate_SS+1))
+            t_ss = np.arange(-self.t1_ss, self.t2_ss, 1000/(self.sampling_rate_SS+1))
             self.ss_train = get_field_mat(self.mat,[self.SS_varname])
-            clusters = np.unique(self.cluster_ID)
+            clusters = np.unique(cluster_ID[cluster_ID!=0])
             cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
-            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, t1_ss, t2_ss)
+            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
             offset = 0
-            for i in range(self.n_clusters):
+            # for i in range(self.n_clusters):
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+            # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
                 # [iy, ix] = np.where(ss_aligned==1)
-                [iy, ix] = np.where(ss_aligned[cluster_ID==clusters[i], :]==True)   
-                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i])
-                offset = offset + (cluster_ID==i+1).sum()
+                [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==True)   
+                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i-1])
+                offset = offset + (cluster_ID==i).sum()
             
             
             ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
-            for i in range(self.n_clusters):
-                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==clusters[i], :], 0), c=self.colors[i], lw=2)
+            # for i in range(self.n_clusters):
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+            # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
+                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[i-1], lw=2)
             
             self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
             self.canvas2.SS.set_ylabel('CS')
             self.canvas2.SS.set_title('SS', loc='left')
-            self.canvas2.SS.set_xlim([-t1_ss, t2_ss])
-            
-            
-        # self.canvas2.onset.plot(time, embedding, 'tab:blue', lw=0.4)
-        # self.canvas2.onset.set_xlabel('CS onset')
-        # self.canvas2.simple_spikes.plot()
-        # self.canvas2.simple_spikes.set_xlabel('Simple Spikes')
+            self.canvas2.SS.set_xlim([-self.t1_ss, self.t2_ss])
+
         self.canvas2.draw()
 
     def save_selected_cluster(self):
@@ -1297,12 +1392,10 @@ class Content(QWidget):
             print(fileName + ' saved')
 
     def get_selected_clusters(self):
-        # selected_clusters = np.where(np.array(self.is_cluster_selected)==True)
         selected_clusters = self.clusters[np.where(np.array(self.is_cluster_selected)==True)]
         selected_indices = np.where(np.isin(np.array(self.cluster_ID), selected_clusters))
-        print(selected_clusters)
-        print(selected_indices)
-        self.save_cluster_ID = self.cluster_ID[selected_indices]
+
+        self.save_cluster_ID = self.cluster_ID_save[selected_indices]
         self.save_CS_onset = self.CS_onset[selected_indices]
         self.save_CS_offset = self.CS_offset[selected_indices]
         self.save_embedding = self.embedding[selected_indices, :].squeeze()
