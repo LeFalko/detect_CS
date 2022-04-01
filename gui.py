@@ -374,10 +374,23 @@ class Content(QWidget):
         
         save_button = QPushButton('Save')
         save_button.clicked.connect(self.saveFileDialog)
-        
         save_layout.addWidget(save_button)
         
-        self.save_box.setLayout(save_layout)
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_save_data())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        
+        layout = QHBoxLayout()
+        layout.addWidget(info_label)
+        layout.addWidget(save_button)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0,10,10,10)
+        
+        self.save_box.setLayout(layout)
 
     # creating the box in the first tab containing user information
     def open_setting_box(self):
@@ -421,19 +434,30 @@ class Content(QWidget):
         remove_button = QPushButton("Remove")
         remove_button.clicked.connect(self.remove_loaded_file)
         
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_loaded_files())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        
         button_layout = QHBoxLayout()
+        button_layout.addWidget(info_label)
         button_layout.addWidget(plot_file_button)
+        button_layout.addSpacing(10)
         button_layout.addWidget(remove_button)
+        button_layout.setSpacing(0)
+        button_layout.setContentsMargins(0,0,0,0)
         button_widget = QWidget()
         button_widget.setLayout(button_layout)
+        button_widget.setFixedHeight(50)
         
-        button_widget.setFixedHeight(70)
-        # button_widget.setStyleSheet('border: 1px solid red;')
-        height = self.loaded_files_box.height()-button_widget.height()-60
-        self.loaded_file_listWidget.setFixedHeight(height)
+        layout.addWidget(button_widget)
+        # height = self.loaded_files_box.height()-button_widget.height()-60
+        # self.loaded_file_listWidget.setFixedHeight(height)
         layout.addWidget(self.loaded_file_listWidget)
         layout.addStretch()
-        layout.addWidget(button_widget)
         # button_widget.sizeHint()
         
         self.loaded_files_box.setLayout(layout)
@@ -483,12 +507,11 @@ class Content(QWidget):
         info_label.setToolTip(self.info_after_labeling())
         info_label.setAlignment(Qt.AlignTop)
         info_label.setAlignment(Qt.AlignHCenter)
-        # info_label.setStyleSheet('border: 1px solid blue;')
         
         after_labeling_layout.addWidget(info_label)
         after_labeling_layout.addWidget(goto_Colab_button)
         after_labeling_layout.setSpacing(0)
-        after_labeling_layout.setContentsMargins(0,10,0,10)
+        after_labeling_layout.setContentsMargins(0,10,10,10)
         
         self.after_labeling_box.setLayout(after_labeling_layout)
     
@@ -515,15 +538,6 @@ class Content(QWidget):
         lineedit = QLineEdit(self.LFP_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
-    
-    # def set_maxCSs(self):
-    #     def changeMaxCSs():
-    #         self.PC_Number = spinbox.value()
-    #     spinbox = QSpinBox()
-    #     spinbox.setRange(1, 20)
-    #     spinbox.setValue(self.PC_Number)
-    #     spinbox.valueChanged.connect(changeMaxCSs)
-    #     return spinbox
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -864,38 +878,47 @@ class Content(QWidget):
         
     # explanation texts for first tab
     def info_data_input(self):
-        text1 = '1. Set initial parameters for labeling CSs. \n'
-        text2 = """2. Upload your recordings. 
-        It should be stored in .mat
-        and contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
-        If no LFP signal is available, you can try creating two identical high-passed action potentials.
+        text = """1. Set initial parameters for labeling CSs. 
+2. Upload your recordings. 
+    It should be stored in .mat
+    and contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
+    If no LFP signal is available, you can try creating two identical high-passed action potentials.
         """
-        return text1 + text2
+        return text
+    
+    def info_loaded_files(self):
+        text = """Loaded files are stored here. 
+    - Plot the selected file
+    - Remove the selected file"""
+        return text
+    
+    def info_save_data(self):
+        text = """The periods some time before and after selected CSs of all files are concatenated and saved in one large row vector."""
+        return text
     
     def info_after_labeling(self):
         text1 = """After saving the CS labels:
-            clicking this button leads you to Google Colab to train the network. 
-            Google Colab provides free computing including GPU.
+    Clicking this button leads you to Google Colab to train the network. 
+    Google Colab is a free cloud service useful for machine learning.
         """
         return text1
     
     def info_select_CS(self):
-        text = """Zoom the recoding and drag-select onset & offset of CSs. \nTo delete the selection, click the selected area. \nAs a rule of thumb, you need to select ~10 CSs per cell.\n\n """ 
+        text = """Zoom the recoding and drag-select onset & offset of CSs. \nTo delete the selection, click the selected area. 
+As a rule of thumb, you need to select ~10 CSs per cell. \nIt is recommended to select a few CSs in the beginning/middle/end \nof the recording for a rubust detection.
         
-        keybord = """Keyboard shortcut: 
-        Set a range : full->Q, 1s->W, 1ms->E 
-        Zoom in->R, zoom out->T
-        Move forward->F, move backward->S
-        Go to previous CS->C, go to next CS->V"""
-        return text + keybord
+Keyboard shortcut: 
+        Set a range : Full -> (Q), 1s -> (W), 1ms -> (E) 
+        Zoom in -> (R), zoom out -> (T)
+        Move forward -> (F), move backward -> (S)
+        Go to previous CS -> (C), go to next CS -> (V)"""
+        return text
 
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
         width = 400
-        detect_cs_layout = QGridLayout()
-        detect_cs_layout.setColumnStretch(0, 0)
-        detect_cs_layout.setColumnStretch(1, 0)
+        detect_cs_layout = QVBoxLayout()
 
         detect_upload_button = QPushButton("Upload a PC recording")
         detect_upload_button.clicked.connect(self.upload_detection_file)
@@ -914,12 +937,35 @@ class Content(QWidget):
         detecting_button = QPushButton('Detect CS')
         detecting_button.clicked.connect(self.detect_CS_starter)
         detecting_button.setFixedWidth(width)
-
-        detect_cs_layout.addWidget(detect_upload_button, 0, 0)
-        detect_cs_layout.addWidget(self.detect_upload_label, 0, 1)
-        detect_cs_layout.addWidget(detect_upload_weights_button, 1, 0)
-        detect_cs_layout.addWidget(self.detect_upload_weights_label, 1, 1)
-        detect_cs_layout.addWidget(detecting_button, 2, 0)
+        
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(30, 30))
+        info_label.setToolTip(self.info_detect_CS())
+        info_label.setFixedHeight(30)
+        
+        widget1 = QWidget()
+        layout1 = QHBoxLayout()
+        layout1.addWidget(info_label)
+        layout1.addStretch()
+        widget1.setLayout(layout1)
+        widget1.setContentsMargins(0,0,0,0)
+        
+        widget2 = QWidget()
+        layout2 = QGridLayout()
+        layout2.addWidget(detect_upload_button, 1, 0)
+        layout2.addWidget(self.detect_upload_label, 1, 1)
+        layout2.addWidget(detect_upload_weights_button, 2, 0)
+        layout2.addWidget(self.detect_upload_weights_label, 2, 1)
+        layout2.addWidget(detecting_button, 3, 0)
+        layout2.setVerticalSpacing(100)
+        widget2.setLayout(layout2)
+        
+        
+        detect_cs_layout.addWidget(widget1)
+        detect_cs_layout.addSpacing(100)
+        detect_cs_layout.addWidget(widget2)
+        detect_cs_layout.addStretch()
 
         self.detect_cs_box.setLayout(detect_cs_layout)
 
@@ -1033,6 +1079,16 @@ class Content(QWidget):
             self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
             
             self.load_output_label.setText(self.outputName)
+            
+    # explanation texts for first tab
+    def info_detect_CS(self):
+        text = """1. Upload a file in which you want to detect CSs.
+    The file should be in .mat as in labeling process:
+    It should contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
+    If no LFP signal is available, you can try creating two identical high-passed action potentials.
+2. Upload a weight that was trained in Google Colab.
+3. Detect CSs."""
+        return text
 
     # FUNCTIONS THIRD TAB
     def align_spikes(self, spikes, alignment, l1=300, l2=300):
@@ -1077,11 +1133,6 @@ class Content(QWidget):
         load_output_layout.addWidget(self.load_output_label)
         load_output_widget.setLayout(load_output_layout)
 
-        # load_box_layout = QVBoxLayout()
-        # load_box_layout.addWidget(load_file_button)
-        # # load_box_layout.addWidget(loaded_file_widget)
-        # load_box_layout.addWidget(load_output_button)
-        
         load_box_layout = QVBoxLayout()
         load_box_layout.addWidget(load_file_widget)
         load_box_layout.addWidget(load_output_widget)
