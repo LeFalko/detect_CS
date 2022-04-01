@@ -37,9 +37,13 @@ class MplCanvas2(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig2 = Figure(figsize=(width, height), dpi=dpi)
         self.CS = fig2.add_subplot(221)
+        self.CS.set_title('CS', loc='left')
         self.LFP = fig2.add_subplot(223)
+        self.LFP.set_title('LFP', loc='left')
         self.CS_clusters = fig2.add_subplot(222)
+        self.CS_clusters.set_title('Feature space', loc='left')
         self.SS = fig2.add_subplot(224)
+        self.SS.set_title('SS', loc='left')
         self.ax2 = self.SS.twinx()
 
         super(MplCanvas2, self).__init__(fig2)
@@ -881,9 +885,9 @@ class Content(QWidget):
         text = """1. Set initial parameters for labeling CSs. 
 2. Upload your recordings. 
     It should be stored in .mat
-    and contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
-    If no LFP signal is available, you can try creating two identical high-passed action potentials.
-        """
+    - high-passed action potential (1 x time)
+    - band-passed LFP signal (1 x time)
+    If no LFP signal is available, you can try using the same high-passed action potentials by setting the same variable name."""
         return text
     
     def info_loaded_files(self):
@@ -1084,10 +1088,20 @@ Keyboard shortcut:
     def info_detect_CS(self):
         text = """1. Upload a file in which you want to detect CSs.
     The file should be in .mat as in labeling process:
-    It should contain high-passed action potential and band-passed LFP signal as a row vector (1 x time).
+    It should contain 
+    - high-passed action potential (1 x time)
+    - band-passed LFP signal (1 x time)
+    - SS train (1 x time, 1 if spike is fired, otherwise 0)
+    SS train is optional and not used for CS detection, but useful for post-processing. 
+    Sampling frequency of SS train can be lower than the other signals.
     If no LFP signal is available, you can try creating two identical high-passed action potentials.
 2. Upload a weight that was trained in Google Colab.
-3. Detect CSs."""
+3. Detect CSs.
+    The output is saved in .mat file with the following variables:
+        - CS_onset: Times of CS onset (1 x #CSs)
+        - CS_offset: Times of CS offst (1 x #CSs)
+        - cluster_ID: Cluster ID for each CS (1 x #CSs)
+        - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
         return text
 
     # FUNCTIONS THIRD TAB
@@ -1106,10 +1120,20 @@ Keyboard shortcut:
         return spikes_aligned       
     
     def create_load_files_for_plot_box(self):
-        width = 250
+        
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_loading_files_for_plot())
+        # info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        info_label.setContentsMargins(0,10,0,0)
+        
+        width = 220
         load_file_widget = QWidget()
         load_file_layout = QHBoxLayout()
-        load_file_layout.setContentsMargins(10, 10, 10, 0)
+        load_file_layout.setContentsMargins(0, 10, 10, 0)
         load_file_layout.setSpacing(10)
         load_file_button = QPushButton("Load PC recording")
         load_file_button.clicked.connect(self.upload_detection_file)
@@ -1122,7 +1146,7 @@ Keyboard shortcut:
         
         load_output_widget = QWidget()
         load_output_layout = QHBoxLayout()
-        load_output_layout.setContentsMargins(10, 10, 10, 10)
+        load_output_layout.setContentsMargins(0, 10, 10, 10)
         load_output_layout.setSpacing(10)
         load_output_button = QPushButton("Load output")
         load_output_button.clicked.connect(self.open_OutputDialog)
@@ -1132,10 +1156,18 @@ Keyboard shortcut:
         load_output_layout.addWidget(load_output_button)
         load_output_layout.addWidget(self.load_output_label)
         load_output_widget.setLayout(load_output_layout)
+        
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.addWidget(load_file_widget)
+        layout.addWidget(load_output_widget)
+        layout.setContentsMargins(0,0,0,0) 
+        layout.setSpacing(0)
+        widget.setLayout(layout)
 
-        load_box_layout = QVBoxLayout()
-        load_box_layout.addWidget(load_file_widget)
-        load_box_layout.addWidget(load_output_widget)
+        load_box_layout = QHBoxLayout()
+        load_box_layout.addWidget(info_label)
+        load_box_layout.addWidget(widget)
         load_box_layout.setContentsMargins(0,0,0,0) 
         load_box_layout.setSpacing(0)
         self.load_files_for_plot_box.setLayout(load_box_layout)
@@ -1145,42 +1177,40 @@ Keyboard shortcut:
     def create_show_data_box(self):
         show_data_layout = QVBoxLayout()
         
-        setting_button = QPushButton("Set parameters")
-        setting_button.clicked.connect(self.open_setting_box2)
-        
-        load_file_button = QPushButton("Load PC recording")
-        load_file_button.clicked.connect(self.upload_detection_file)
-        
-        loaded_file_widget = QListWidget()
-        loaded_file_widget.setFixedHeight(34)
-        print('height',load_file_button.sizeHint())
-        
-        load_output_button = QPushButton("Load output")
-        load_output_button.clicked.connect(self.open_OutputDialog)
-
-        saving_button = QPushButton('Save selected cluster data')
-        saving_button.clicked.connect(self.save_selected_cluster)
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(20)
+        info_label.setToolTip(self.info_select_clusters())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
 
         create_cluster_selection_button = QPushButton('Select CS clusters')
+        create_cluster_selection_button.clicked.connect(self.generate_cluster_list)
+        
+        widget = QWidget()
+        layout1 = QHBoxLayout()
+        layout1.addWidget(info_label)
+        layout1.addWidget(create_cluster_selection_button)
+        layout1.setSpacing(0)
+        layout1.setContentsMargins(0,0,0,0)
+        widget.setLayout(layout1)
 
         select_widget = QWidget()
         self.checkbox_widget = QWidget()
-        self.checkbox_widget.setStyleSheet('border: 1px solid black;')
 
-        layout = QVBoxLayout()
-        layout.addWidget(create_cluster_selection_button)
-        layout.addWidget(self.checkbox_widget)
-        layout.addStretch()
+        layout2 = QVBoxLayout()
+        layout2.addWidget(widget)
+        layout2.addWidget(self.checkbox_widget)
+        layout2.addStretch()
+        layout2.setContentsMargins(0,0,0,0)
         
-        select_widget.setLayout(layout)
+        select_widget.setLayout(layout2)
+        # select_widget.setStyleSheet('border:1px solid black;')
         
-        load_box = QGroupBox("Load files")
-        load_box_layout = QVBoxLayout()
-        load_box_layout.addWidget(load_file_button)
-        load_box_layout.addWidget(loaded_file_widget)
-        load_box_layout.addWidget(load_output_button)
-        load_box.setLayout(load_box_layout)
-        
+        saving_button = QPushButton('Save selected cluster data')
+        saving_button.clicked.connect(self.save_selected_cluster)
+
         select_cluster_box = QGroupBox("Select clusters")
         select_cluster_box_layout = QVBoxLayout()
         select_cluster_box_layout.addWidget(select_widget)
@@ -1191,8 +1221,7 @@ Keyboard shortcut:
         show_data_layout.addWidget(select_cluster_box)
 
         self.select_show_data_box.setLayout(show_data_layout)
-
-        create_cluster_selection_button.clicked.connect(self.generate_cluster_list)
+        # self.select_show_data_box.setStyleSheet('border: 1px solid red;')
         
     def open_setting_box2(self):
         dialog = QDialog()
@@ -1200,9 +1229,6 @@ Keyboard shortcut:
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
-        layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
-        layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
-        layout.addRow(QLabel("Gaussian kernel size [ms]"), self.set_sigma())
         
         cs_xlim_widget = QWidget()
         cs_xlim_layout = QHBoxLayout()
@@ -1216,6 +1242,13 @@ Keyboard shortcut:
         cs_xlim_label = QLabel("Time range 1")
         cs_xlim_label.setToolTip("Time range of action potential and LFP from CS onset")
         
+        layout.addRow(cs_xlim_label, cs_xlim_widget)        
+        layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
+        layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
+        sigma_label = QLabel("Gaussian kernel size [ms]")
+        sigma_label.setToolTip("Used for computing SS firing rate")
+        layout.addRow(sigma_label, self.set_sigma())
+        
         ss_xlim_widget = QWidget()
         ss_xlim_layout = QHBoxLayout()
         ss_xlim_layout.setContentsMargins(0,0,0,0)
@@ -1228,7 +1261,6 @@ Keyboard shortcut:
         ss_xlim_label = QLabel("Time range 2")
         ss_xlim_label.setToolTip("Time range of SS from CS onset")
         
-        layout.addRow(cs_xlim_label, cs_xlim_widget)
         layout.addRow(ss_xlim_label, ss_xlim_widget)
         layout.addRow(ok_button)
         dialog.setLayout(layout)
@@ -1321,15 +1353,11 @@ Keyboard shortcut:
         
         self.sort_clusters(cluster_ID)
         
-    def add_checkbox(self):
-        self.checkbox_widget.setLayout(self.checkbox_layout)
-
     def generate_cluster_list(self):
         self.is_cluster_selected = []
         self.combobox = []
         self.checkbutton = []
         self.checkbox_layout = QVBoxLayout()
-        self.add_checkbox()
         print('n_clusters: ',self.n_clusters)
         if self.n_clusters:
             for i in range(self.n_clusters):
@@ -1364,7 +1392,19 @@ Keyboard shortcut:
                 self.clusters_selected[i] = self.combobox[i].currentIndex()+1
             update_button = QPushButton("Update")
             update_button.clicked.connect(self.update_clusters)
+            
             self.checkbox_layout.addWidget(update_button)
+            # self.checkbox_layout.update()
+            self.checkbox_widget.setLayout(self.checkbox_layout)
+            # self.checkbox_widget.update()
+            # self.checkbox_widget.repaint()
+        else:
+            self.checkbox_layout.addWidget(QLabel("No cluster"))
+            self.checkbox_widget.setLayout(self.checkbox_layout)
+        print('self.checkbox_widget',self.checkbox_widget.children())
+        print('self.checkbox_widget',self.checkbox_widget.size())
+        # self.checkbox_widget.setStyleSheet('border: 1px solid black;')
+        # self.checkbox_widget.
 
     def checkbutton_clicked(self):
         self.set_cluster_selected()
@@ -1386,11 +1426,19 @@ Keyboard shortcut:
         
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
+        
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(30, 30))
+        info_label.setToolTip(self.info_plot_detected_CS())
+        info_label.setFixedHeight(30)
 
         navi_layout = QHBoxLayout()
+        navi_layout.addWidget(info_label)
         navi_layout.addWidget(setting_button)
         navi_layout.addWidget(plotting_button)
         navi_layout.addWidget(toolbar)
+        navi_layout.setContentsMargins(0, 0, 0, 0)
         navi.setLayout(navi_layout)
         
         cluster_plotting_layout.addWidget(navi, 1, 0)
@@ -1436,7 +1484,7 @@ Keyboard shortcut:
             self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i])
         self.canvas2.CS_clusters.set_xlabel('Dimension 1')
         self.canvas2.CS_clusters.set_ylabel('Dimension 2')
-        self.canvas2.CS_clusters.set_title('CS clusters', loc='left')
+        self.canvas2.CS_clusters.set_title('Feature space', loc='left')
 
         t = np.arange(-self.t1, self.t2, 1000/(self.sampling_rate+1))
         p = 0.6
@@ -1528,7 +1576,40 @@ Keyboard shortcut:
         self.save_CS_offset = self.CS_offset[selected_indices]
         self.save_embedding = self.embedding[selected_indices, :].squeeze()
 
-
+    # explanation texts for first tab
+    def info_loading_files_for_plot(self):
+        text = """If you come directly from the CS detection process, you can skip this part.
+Alternatively, if you want to newly process cluster selection of your already saved files, you need to load them here.
+1. Load PC recording
+    The file should the same data as the one used in the CS detection process.
+2. Load output
+    The file should be the output file produced by using the abovementioned file."""
+        return text
+    
+    def info_select_clusters(self):
+        text = """1. Select CS clusters.
+    Click "Select CS clusters" after loading output file.
+    Clusters are sorted by the size, in descending order.
+    By checking/unckecking, you can select which clusters you want to save.
+    You can merge clusters by changing the cluster ID/color. 
+    After selection, click "Update" and see the new plot. 
+2. Save the selected clusters.
+    The selected CS clusters are saved in the save way as in the CS detection process:
+        - CS_onset: Times of CS onset (1 x #CSs)
+        - CS_offset: Times of CS offst (1 x #CSs)
+        - cluster_ID: Newly selected cluster ID for each CS (1 x #CSs)
+        - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
+        return text
+    
+    def info_plot_detected_CS(self):
+        text = """1. Set parameters for plotting.
+    If SS train is not available, leave the variable name empty.
+2. Plot detected clusters Each cluster is plotted in a different color.
+    CS: High-passed action potential aligned to CS onset.
+    LFP: Band-passed LFP aligned to CS onset.
+    Feature space: Clustering is based on this dimensionally reduced feature space (using UMAP).
+    SS: SS raster and firing rate aligned to CS onset."""
+        return text
 
 def create():
     app = QApplication(sys.argv)
