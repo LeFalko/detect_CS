@@ -1198,7 +1198,8 @@ Keyboard shortcut:
 
         select_widget = QWidget()
         self.checkbox_widget = QWidget()
-
+        self.checkbox_layout = QVBoxLayout()
+        
         layout2 = QVBoxLayout()
         layout2.addWidget(widget)
         layout2.addWidget(self.checkbox_widget)
@@ -1357,7 +1358,14 @@ Keyboard shortcut:
         self.is_cluster_selected = []
         self.combobox = []
         self.checkbutton = []
-        self.checkbox_layout = QVBoxLayout()
+        index = self.checkbox_layout.count()
+        while(index > 0):
+            print('self.checkbox_layout',self.checkbox_layout)
+            print('self.checkbox_layout.itemAt(index-1)',index,self.checkbox_layout.itemAt(index-1))
+            myWidget = self.checkbox_layout.itemAt(index-1).widget()
+            myWidget.setParent(None)
+            index -=1
+        
         print('n_clusters: ',self.n_clusters)
         if self.n_clusters:
             for i in range(self.n_clusters):
@@ -1394,17 +1402,14 @@ Keyboard shortcut:
             update_button.clicked.connect(self.update_clusters)
             
             self.checkbox_layout.addWidget(update_button)
-            # self.checkbox_layout.update()
+            print(self.checkbox_layout.children())
             self.checkbox_widget.setLayout(self.checkbox_layout)
-            # self.checkbox_widget.update()
-            # self.checkbox_widget.repaint()
         else:
             self.checkbox_layout.addWidget(QLabel("No cluster"))
             self.checkbox_widget.setLayout(self.checkbox_layout)
+        print('self.checkbox_layout',self.checkbox_layout.count())
         print('self.checkbox_widget',self.checkbox_widget.children())
-        print('self.checkbox_widget',self.checkbox_widget.size())
         # self.checkbox_widget.setStyleSheet('border: 1px solid black;')
-        # self.checkbox_widget.
 
     def checkbutton_clicked(self):
         self.set_cluster_selected()
@@ -1597,7 +1602,7 @@ Alternatively, if you want to newly process cluster selection of your already sa
     The selected CS clusters are saved in the save way as in the CS detection process:
         - CS_onset: Times of CS onset (1 x #CSs)
         - CS_offset: Times of CS offst (1 x #CSs)
-        - cluster_ID: Newly selected cluster ID for each CS (1 x #CSs)
+        - cluster_ID: Newly selected and labeled cluster ID for each CS (1 x #CSs)
         - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
         return text
     
