@@ -27,9 +27,11 @@ class MplCanvas(FigureCanvas):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.high_axes = fig.add_subplot(211)
         self.high_axes.get_xaxis().set_visible(False)
+        self.high_axes.set_title('Action potential')
         self.lfp_axes = fig.add_subplot(212, sharex=self.high_axes, sharey=self.high_axes)
         self.lfp_axes.get_xaxis().set_visible(True)
         self.lfp_axes.set_xlabel('Time')
+        self.lfp_axes.set_title('LFP')
 
         super(MplCanvas, self).__init__(fig)
         
@@ -80,7 +82,7 @@ class Content(QWidget):
         # Initialize arrays and helper values
         self.LFP_varname = 'RAW'
         self.HIGH_varname = 'HIGH'
-        self.SS_varname = 'SS'
+        self.SS_varname = 'SS_train'
         self.LFP = []
         self.HIGH = []
         self.Labels = []
@@ -118,6 +120,8 @@ class Content(QWidget):
         self.t2 = 20
         self.t1_ss = 50
         self.t2_ss = 50
+        self.ms1 = 3
+        self.ms2 = 3
         # self.colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 
         #                'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
@@ -404,7 +408,7 @@ class Content(QWidget):
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
         layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
-        layout.addRow(QLabel("High-passed action potential variable name"), self.set_HighVarname())
+        layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
         layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
         # layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
@@ -628,10 +632,10 @@ class Content(QWidget):
             self.canvas.high_axes.add_patch(patch)
             self.canvas.lfp_axes.add_patch(patch)
         self.canvas.high_axes.set_xlim([0, self.t[-1]])
-        self.canvas.high_axes.set_ylabel('High-pass signal')
+        self.canvas.high_axes.set_ylabel('Action potential')
         self.canvas.lfp_axes.plot(self.t, raw_data, 'tab:blue', lw=0.4)
         self.canvas.lfp_axes.set_xlim([0, self.t[-1]])
-        self.canvas.lfp_axes.set_ylabel('Local field potential')
+        self.canvas.lfp_axes.set_ylabel('LFP')
         self.canvas.lfp_axes.set_xlabel('time [s]')
         self.canvas.high_axes.set_title(self.upload_fileName)
         self.canvas.draw()
@@ -883,39 +887,36 @@ class Content(QWidget):
     # explanation texts for first tab
     def info_data_input(self):
         text = """1. Set initial parameters for labeling CSs. 
-2. Upload your recordings. 
-    It should be stored in .mat
-    - high-passed action potential (1 x time)
-    - band-passed LFP signal (1 x time)
-    If no LFP signal is available, you can try using the same high-passed action potentials by setting the same variable name."""
+2. Upload your recordings (stored in .mat format).
+    - high band-passed action potential (1 x time)
+    - low band-passed LFP signal (1 x time)
+    Note: although not recommended, if no LFP signal is available, try using the same high band-passed signal as LFP. """
         return text
     
     def info_loaded_files(self):
         text = """Loaded files are stored here. 
-    - Plot the selected file
-    - Remove the selected file"""
+    - plot/remove the selected file"""
         return text
     
     def info_save_data(self):
-        text = """The periods some time before and after selected CSs of all files are concatenated and saved in one large row vector."""
+        text = """CSs of all files are concatenated and saved in one large row vector."""
         return text
     
     def info_after_labeling(self):
-        text1 = """After saving the CS labels:
-    Clicking this button leads you to Google Colab to train the network. 
-    Google Colab is a free cloud service useful for machine learning.
-        """
+        text1 = """After saving the CS labels, click this button to use Google Colab for training the network:
+    We use the resources of Google Colab, a free cloud service useful for machine learning."""
         return text1
     
     def info_select_CS(self):
-        text = """Zoom the recoding and drag-select onset & offset of CSs. \nTo delete the selection, click the selected area. 
-As a rule of thumb, you need to select ~10 CSs per cell. \nIt is recommended to select a few CSs in the beginning/middle/end \nof the recording for a rubust detection.
+        text = """- Find CSs by zooming in and drag-select the onset & offset of CSs. Selected CSs will be shaded in red. 
+- To delete the selection, click the selected area. 
+- We recoomend selecting ~10 CSs per cell from the beginning, middle and end of the recording.
         
-Keyboard shortcut: 
-        Set a range : Full -> (Q), 1s -> (W), 1ms -> (E) 
-        Zoom in -> (R), zoom out -> (T)
-        Move forward -> (F), move backward -> (S)
-        Go to previous CS -> (C), go to next CS -> (V)"""
+Keyboard shortcuts: 
+        Set a range : Full: Q,  1s: W,  1ms: E 
+        Zoom in: R,  zoom out: T
+        Move forward: F,  move backward: S
+        Go to previous CS: C,  go to next CS: V"""
         return text
 
     # FUNCTIONS SECOND TAB
@@ -1018,18 +1019,21 @@ Keyboard shortcut:
 
     def detect_CS_starter(self):
         runningbox = QMessageBox()
+        runningbox.show()
         runningbox.setWindowTitle("Running")
-        runningbox.setText("Detecting CSs....")
-        runningbox.exec_()
+        runningbox.setText("No CSs detected")
+        # runningbox.exec()
         
+        print('popup')
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+        print('Detecting CSs...')
         runningbox.done(1)
         
         cs_onset = output['cs_onset']
         cs_offset = output['cs_offset']
         cluster_ID = output['cluster_ID']
         embedding = output['embedding']
-        print(cs_onset.shape, cluster_ID.shape, embedding.shape)
+        # print(cs_onset.shape, cluster_ID.shape, embedding.shape)
         
         self.sort_clusters(cluster_ID)
         
@@ -1037,6 +1041,7 @@ Keyboard shortcut:
         self.CS_offset = cs_offset
         self.embedding = embedding
 
+        print("\a")
         self.save_detectFileDialog()
         
     def sort_clusters(self, cluster_ID):
@@ -1055,7 +1060,7 @@ Keyboard shortcut:
         for i in range(n_clusters):
             cluster_ID_sorted[cluster_ID==clusters[clusters_sorted_idx[i]]] = i+1
         clusters_sorted = np.sort(np.unique(cluster_ID_sorted))
-        print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
+        # print(np.unique(cluster_ID_sorted), clusters, clusters_sorted)
         
         self.cluster_ID = cluster_ID_sorted
         self.cluster_ID_save = cluster_ID_sorted.copy()
@@ -1086,20 +1091,18 @@ Keyboard shortcut:
             
     # explanation texts for first tab
     def info_detect_CS(self):
-        text = """1. Upload a file in which you want to detect CSs.
-    The file should be in .mat as in labeling process:
-    It should contain 
-    - high-passed action potential (1 x time)
-    - band-passed LFP signal (1 x time)
+        text = """1. Upload a file in which you want to detect CSs (stored in .mat format as in labeling process).
+    - high band-passed action potential (1 x time)
+    - low band-passed LFP signal (1 x time)
     - SS train (1 x time, 1 if spike is fired, otherwise 0)
     SS train is optional and not used for CS detection, but useful for post-processing. 
     Sampling frequency of SS train can be lower than the other signals.
-    If no LFP signal is available, you can try creating two identical high-passed action potentials.
+    Although not recommended, if no LFP signal is available, try using the same high band-passed signal as LFP.
 2. Upload a weight that was trained in Google Colab.
 3. Detect CSs.
-    The output is saved in .mat file with the following variables:
+    The output is saved in .mat format with the following variables:
         - CS_onset: Times of CS onset (1 x #CSs)
-        - CS_offset: Times of CS offst (1 x #CSs)
+        - CS_offset: Times of CS offset (1 x #CSs)
         - cluster_ID: Cluster ID for each CS (1 x #CSs)
         - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
         return text
@@ -1112,7 +1115,7 @@ Keyboard shortcut:
             if alignment[i] - l1 < 0:
                 frag = np.hstack([np.zeros([l1-alignment[i]+1])*np.nan, spikes[0:alignment[i]+l2]])
             elif alignment[i]+l2+1 > spikes.shape[0]:
-                frag = np.hstack([spikes[alignment[i]-l1:-1], np.zeros(alignment[i]+l2+2-self.ss_train.shape[0])*np.nan])
+                frag = np.hstack([spikes[alignment[i]-l1:-1], np.zeros(alignment[i]+l2+2-spikes.shape[0])*np.nan])
             else:
                 frag = spikes[alignment[i]-l1:alignment[i]+l2+1]
             spikes_aligned[i, :] = frag
@@ -1135,7 +1138,7 @@ Keyboard shortcut:
         load_file_layout = QHBoxLayout()
         load_file_layout.setContentsMargins(0, 10, 10, 0)
         load_file_layout.setSpacing(10)
-        load_file_button = QPushButton("Load PC recording")
+        load_file_button = QPushButton("Load a PC recording")
         load_file_button.clicked.connect(self.upload_detection_file)
         load_file_button.setFixedWidth(width)
         
@@ -1231,6 +1234,10 @@ Keyboard shortcut:
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
         
+        layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
+        layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
+        layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
+        
         cs_xlim_widget = QWidget()
         cs_xlim_layout = QHBoxLayout()
         cs_xlim_layout.setContentsMargins(0,0,0,0)
@@ -1240,15 +1247,22 @@ Keyboard shortcut:
         cs_xlim_layout.addStretch()
         cs_xlim_layout.addWidget(self.set_time_after_CS())
         cs_xlim_widget.setLayout(cs_xlim_layout)
-        cs_xlim_label = QLabel("Time range 1")
+        cs_xlim_label = QLabel("Time range for CS & LFP [ms]")
         cs_xlim_label.setToolTip("Time range of action potential and LFP from CS onset")
         
-        layout.addRow(cs_xlim_label, cs_xlim_widget)        
         layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
         layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
+        layout.addRow(cs_xlim_label, cs_xlim_widget)        
+        
+        ms_label1 = QLabel("Marker size for feature space")
+        layout.addRow(ms_label1, self.set_ms1())
+        
         sigma_label = QLabel("Gaussian kernel size [ms]")
         sigma_label.setToolTip("Used for computing SS firing rate")
         layout.addRow(sigma_label, self.set_sigma())
+        
+        ms_label2 = QLabel("Marker size for SS")
+        layout.addRow(ms_label2, self.set_ms2())
         
         ss_xlim_widget = QWidget()
         ss_xlim_layout = QHBoxLayout()
@@ -1259,7 +1273,8 @@ Keyboard shortcut:
         ss_xlim_layout.addStretch()
         ss_xlim_layout.addWidget(self.set_time_after_CS_for_SS())
         ss_xlim_widget.setLayout(ss_xlim_layout)
-        ss_xlim_label = QLabel("Time range 2")
+        
+        ss_xlim_label = QLabel("Time range for SS [ms]")
         ss_xlim_label.setToolTip("Time range of SS from CS onset")
         
         layout.addRow(ss_xlim_label, ss_xlim_widget)
@@ -1329,6 +1344,24 @@ Keyboard shortcut:
         spinbox.valueChanged.connect(change)
         return spinbox
     
+    def set_ms1(self):
+        def change():
+            self.ms1 = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 10)
+        spinbox.setValue(self.ms1)
+        spinbox.valueChanged.connect(change)
+        return spinbox
+    
+    def set_ms2(self):
+        def change():
+            self.ms2 = spinbox.value()
+        spinbox = QSpinBox()
+        spinbox.setRange(1, 10)
+        spinbox.setValue(self.ms2)
+        spinbox.valueChanged.connect(change)
+        return spinbox
+    
     def open_OutputDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -1337,8 +1370,8 @@ Keyboard shortcut:
         if fileName:
             self.upload_output(fileName)
             ext = fileName.split('.')[-1]
-            self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
-            self.load_output_label.setText(self.detect_fileName)
+            self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+            self.load_output_label.setText(self.outputName)
         
     def upload_output(self, fileName):
         output = sp.loadmat(fileName)
@@ -1370,7 +1403,7 @@ Keyboard shortcut:
         if self.n_clusters:
             for i in range(self.n_clusters):
                 checkbox = QCheckBox("n={}".format(self.cluster_size[i].astype(int)))
-                checkbox.setFixedWidth(80)
+                checkbox.setFixedWidth(90)
                 self.checkbutton.append(checkbox)
                 self.is_cluster_selected.append(True)
                 self.checkbutton[i].setCheckState(self.is_cluster_selected[i])
@@ -1473,7 +1506,7 @@ Keyboard shortcut:
             if not self.is_cluster_selected[i]:
                 cluster_ID[self.cluster_ID == i+1] = 0
         n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
-        print('n_clusters plot', n_clusters, len(cluster_ID), cluster_ID)
+        # print('n_clusters plot', n_clusters, len(cluster_ID), cluster_ID)
         
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
@@ -1481,12 +1514,10 @@ Keyboard shortcut:
         self.canvas2.SS.cla()
         self.canvas2.ax2.cla()
 
-        print(self.is_cluster_selected)
-        print([np.where(np.array(self.is_cluster_selected)==True)[0]])
-        for i in range(n_clusters):
-        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
-            idx = cluster_ID == i+1
-            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i])
+        # print(self.is_cluster_selected)
+        for i in np.unique(cluster_ID[cluster_ID!=0]):
+            idx = cluster_ID == i
+            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i-1], ms=self.ms1)
         self.canvas2.CS_clusters.set_xlabel('Dimension 1')
         self.canvas2.CS_clusters.set_ylabel('Dimension 2')
         self.canvas2.CS_clusters.set_title('Feature space', loc='left')
@@ -1511,15 +1542,11 @@ Keyboard shortcut:
         
         # plot LFP
         lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
-        # for i in range(self.n_clusters):
         for i in np.unique(cluster_ID[cluster_ID!=0]):
-        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
             idx = cluster_ID == i
             color = mplcolors.to_rgba_array(self.colors[i-1])
             self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
-        # for i in range(self.n_clusters):
         for i in np.unique(cluster_ID[cluster_ID!=0]):
-        # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
             idx = cluster_ID == i
             self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i-1], lw=2)
         self.canvas2.LFP.set_xlim((-self.t1, self.t2))
@@ -1527,7 +1554,8 @@ Keyboard shortcut:
         self.canvas2.LFP.set_title('LFP', loc='left')
             
         # plot SS
-        if self.SS_varname:
+        
+        if self.SS_varname in self.mat.keys():
             
             t_ss = np.arange(-self.t1_ss, self.t2_ss, 1000/(self.sampling_rate_SS+1))
             self.ss_train = get_field_mat(self.mat,[self.SS_varname])
@@ -1535,19 +1563,15 @@ Keyboard shortcut:
             cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
             ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
             offset = 0
-            # for i in range(self.n_clusters):
             for i in np.unique(cluster_ID[cluster_ID!=0]):
-            # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
-                # [iy, ix] = np.where(ss_aligned==1)
                 [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==True)   
-                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=self.colors[i-1])
+                color = mplcolors.to_rgba_array(self.colors[i-1])
+                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
                 offset = offset + (cluster_ID==i).sum()
             
             
             ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
-            # for i in range(self.n_clusters):
             for i in np.unique(cluster_ID[cluster_ID!=0]):
-            # for i in [i for i in np.where(np.array(self.is_cluster_selected)==True)[0]]:
                 self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[i-1], lw=2)
             
             self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
@@ -1561,7 +1585,7 @@ Keyboard shortcut:
     def save_selected_cluster(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.detect_fileName+'_clusters.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.detect_fileName.split('.')[-2]+'_cs_clusters.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         if fileName:
@@ -1583,37 +1607,35 @@ Keyboard shortcut:
 
     # explanation texts for first tab
     def info_loading_files_for_plot(self):
-        text = """If you come directly from the CS detection process, you can skip this part.
-Alternatively, if you want to newly process cluster selection of your already saved files, you need to load them here.
-1. Load PC recording
-    The file should the same data as the one used in the CS detection process.
+        text = """1. Load PC recording
+    The same data as the one used in the CS detection process.
 2. Load output
-    The file should be the output file produced by using the abovementioned file."""
+    The output file produced by using the abovementioned file.
+Note: After the CS detection process, the files are already loaded here."""
         return text
     
     def info_select_clusters(self):
         text = """1. Select CS clusters.
-    Click "Select CS clusters" after loading output file.
-    Clusters are sorted by the size, in descending order.
-    By checking/unckecking, you can select which clusters you want to save.
-    You can merge clusters by changing the cluster ID/color. 
-    After selection, click "Update" and see the new plot. 
+    - Show CS clusters
+    Select which clusters you want to save by changing the checkbox.
+    Merge clusters by changing the cluster ID/color. 
+    - Update to see the new plot. 
 2. Save the selected clusters.
     The selected CS clusters are saved in the save way as in the CS detection process:
         - CS_onset: Times of CS onset (1 x #CSs)
-        - CS_offset: Times of CS offst (1 x #CSs)
+        - CS_offset: Times of CS offset (1 x #CSs)
         - cluster_ID: Newly selected and labeled cluster ID for each CS (1 x #CSs)
         - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
         return text
     
     def info_plot_detected_CS(self):
         text = """1. Set parameters for plotting.
-    If SS train is not available, leave the variable name empty.
-2. Plot detected clusters Each cluster is plotted in a different color.
-    CS: High-passed action potential aligned to CS onset.
-    LFP: Band-passed LFP aligned to CS onset.
-    Feature space: Clustering is based on this dimensionally reduced feature space (using UMAP).
-    SS: SS raster and firing rate aligned to CS onset."""
+    If no SS train is available, leave the variable name empty.
+2. Plot detected clusters. Each cluster is plotted in a different color.
+    - CS: High band-passed action potential aligned to CS onset.
+    - LFP: Low band-passed LFP aligned to CS onset.
+    - Feature space: Clustering is based on this dimensionally reduced feature space (using UMAP).
+    - SS: SS raster and firing rate aligned to CS onset."""
         return text
 
 def create():
