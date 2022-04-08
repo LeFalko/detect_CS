@@ -115,6 +115,7 @@ class Content(QWidget):
         self.embedding = []
         self.n_clusters = []
         self.ss_train = []
+        self.ss_sort = 'cluster'
         self.sigma = 5
         self.t1 = 5
         self.t2 = 20
@@ -808,7 +809,7 @@ class Content(QWidget):
             self.zoom(1/self.zoom_ratio)
         elif event.key()==Qt.Key_F:
             self.scroll.setValue(self.scroll.value() + 1)
-        elif event.key()==Qt.Key_S:
+        elif event.key()==Qt.Key_D:
             self.scroll.setValue(self.scroll.value() - 1)
         elif event.key() == Qt.Key_Q:
             self.set_max_xlim()
@@ -890,7 +891,7 @@ class Content(QWidget):
 2. Upload your recordings (stored in .mat format).
     - high band-passed action potential (1 x time)
     - low band-passed LFP signal (1 x time)
-    Note: although not recommended, if no LFP signal is available, try using the same high band-passed signal as LFP. """
+    Note: although not recommended, in case no LFP signal is available, try using the high band-passed signal also as LFP. """
         return text
     
     def info_loaded_files(self):
@@ -903,19 +904,19 @@ class Content(QWidget):
         return text
     
     def info_after_labeling(self):
-        text1 = """After saving the CS labels, click this button to use Google Colab for training the network:
-    We use the resources of Google Colab, a free cloud service useful for machine learning."""
+        text1 = """After saving the CS labels, 
+click this button to use Google Colab's resource for training the network."""
         return text1
     
     def info_select_CS(self):
         text = """- Find CSs by zooming in and drag-select the onset & offset of CSs. Selected CSs will be shaded in red. 
-- To delete the selection, click the selected area. 
-- We recoomend selecting ~10 CSs per cell from the beginning, middle and end of the recording.
+- To delete the selection, click the selected red area. 
+- We recoomend selecting ~10 CSs per cell from the beginning, middle and end of the recording session.
         
 Keyboard shortcuts: 
         Set a range : Full: Q,  1s: W,  1ms: E 
         Zoom in: R,  zoom out: T
-        Move forward: F,  move backward: S
+        Move forward: F,  move backward: D
         Go to previous CS: C,  go to next CS: V"""
         return text
 
@@ -1094,17 +1095,17 @@ Keyboard shortcuts:
         text = """1. Upload a file in which you want to detect CSs (stored in .mat format as in labeling process).
     - high band-passed action potential (1 x time)
     - low band-passed LFP signal (1 x time)
-    - SS train (1 x time, 1 if spike is fired, otherwise 0)
+    - SS train (1 x time, 1 if the spike is fired, otherwise 0)
     SS train is optional and not used for CS detection, but useful for post-processing. 
-    Sampling frequency of SS train can be lower than the other signals.
-    Although not recommended, if no LFP signal is available, try using the same high band-passed signal as LFP.
-2. Upload a weight that was trained in Google Colab.
+    Sampling frequency of the SS train can be lower than the other signals.
+    Although not recommended, in case no LFP signal is available, try using the same high band-passed signal as LFP.
+2. Upload the weights of the network trained in Google Colab.
 3. Detect CSs.
     The output is saved in .mat format with the following variables:
-        - CS_onset: Times of CS onset (1 x #CSs)
-        - CS_offset: Times of CS offset (1 x #CSs)
-        - cluster_ID: Cluster ID for each CS (1 x #CSs)
-        - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
+        - CS_onset: Times of CS start (1 x # of CSs)
+        - CS_offset: Times of CS end (1 x # of CSs)
+        - cluster_ID: Cluster ID for each CS (1 x # of CSs)
+        - embedding: Two dimensional representation of CS feature space (# of CSs x 2)"""
         return text
 
     # FUNCTIONS THIRD TAB
@@ -1252,11 +1253,13 @@ Keyboard shortcuts:
         
         layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
         layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
-        layout.addRow(cs_xlim_label, cs_xlim_widget)        
-        
+        layout.addRow(cs_xlim_label, cs_xlim_widget)      
+                
         ms_label1 = QLabel("Marker size for feature space")
         layout.addRow(ms_label1, self.set_ms1())
         
+        layout.addRow(QLabel("SS raster sorting"), self.set_SS_sorting())
+
         sigma_label = QLabel("Gaussian kernel size [ms]")
         sigma_label.setToolTip("Used for computing SS firing rate")
         layout.addRow(sigma_label, self.set_sigma())
@@ -1298,6 +1301,16 @@ Keyboard shortcuts:
         lineedit = QLineEdit(self.SS_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
+    
+    def set_SS_sorting(self):
+        def changeText():
+            self.ss_sort = combobox.currentText()
+        combobox = QComboBox()
+        combobox.addItem('cluster')
+        combobox.addItem('time')
+        combobox.currentIndexChanged.connect(changeText)
+        combobox.setCurrentText(self.ss_sort)
+        return combobox
     
     def set_sigma(self):
         def changeSigma():
@@ -1411,7 +1424,7 @@ Keyboard shortcuts:
                 combobox = QComboBox()
                 for j in range(self.n_clusters):
                     color = QPixmap(50,50)
-                    color.fill(QColor(self.colors[j]))
+                    color.fill(QColor(self.colors[(j)%len(self.colors)]))
                     icon = QIcon(color)
                     combobox.addItem(icon, 'cluster {}'.format(j+1))
                 combobox.setCurrentIndex(self.clusters[i]-1)
@@ -1501,12 +1514,12 @@ Keyboard shortcuts:
         cs_offset = self.CS_offset
         cs_onset = self.CS_onset
         embedding = self.embedding
-        # n_clusters = self.n_clusters
+        # print('cluster_ID',cluster_ID)
+
         for i in range(len(self.is_cluster_selected)):
             if not self.is_cluster_selected[i]:
                 cluster_ID[self.cluster_ID == i+1] = 0
-        n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
-        # print('n_clusters plot', n_clusters, len(cluster_ID), cluster_ID)
+        # n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
         
         self.canvas2.CS.cla()
         self.canvas2.LFP.cla()
@@ -1514,10 +1527,9 @@ Keyboard shortcuts:
         self.canvas2.SS.cla()
         self.canvas2.ax2.cla()
 
-        # print(self.is_cluster_selected)
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
-            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[i-1], ms=self.ms1)
+            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[(i-1)%len(self.colors)], ms=self.ms1)
         self.canvas2.CS_clusters.set_xlabel('Dimension 1')
         self.canvas2.CS_clusters.set_ylabel('Dimension 2')
         self.canvas2.CS_clusters.set_title('Feature space', loc='left')
@@ -1530,11 +1542,11 @@ Keyboard shortcuts:
         cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
-            color = mplcolors.to_rgba_array(self.colors[i-1])
+            color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
             self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
-            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[i-1], lw=2)
+            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
         self.canvas2.CS.set_xlim((-self.t1, self.t2))
         self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
         self.canvas2.CS.set_title('CS', loc='left')
@@ -1544,11 +1556,11 @@ Keyboard shortcuts:
         lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
-            color = mplcolors.to_rgba_array(self.colors[i-1])
+            color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
             self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
-            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[i-1], lw=2)
+            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
         self.canvas2.LFP.set_xlim((-self.t1, self.t2))
         self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
         self.canvas2.LFP.set_title('LFP', loc='left')
@@ -1556,23 +1568,30 @@ Keyboard shortcuts:
         # plot SS
         
         if self.SS_varname in self.mat.keys():
-            
+
             t_ss = np.arange(-self.t1_ss, self.t2_ss, 1000/(self.sampling_rate_SS+1))
             self.ss_train = get_field_mat(self.mat,[self.SS_varname])
-            clusters = np.unique(cluster_ID[cluster_ID!=0])
+            # clusters = np.unique(cluster_ID[cluster_ID!=0])
             cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
             ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
             offset = 0
-            for i in np.unique(cluster_ID[cluster_ID!=0]):
-                [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==True)   
-                color = mplcolors.to_rgba_array(self.colors[i-1])
-                self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
-                offset = offset + (cluster_ID==i).sum()
-            
+            print('ss_sort', self.ss_sort)
+            if self.ss_sort == 'cluster':
+                for i in np.unique(cluster_ID[cluster_ID!=0]):
+                    [iy, ix] = np.where(ss_aligned[cluster_ID[cluster_ID!=0]==i, :]==1)   
+                    color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                    self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
+                    offset = offset + (cluster_ID==i).sum()
+            elif self.ss_sort == 'time':
+                [iy, ix] = np.where(ss_aligned[cluster_ID[cluster_ID!=0]!=0, :]==1) 
+                for i in np.unique(cluster_ID[cluster_ID!=0]):
+                    idx = np.in1d(iy, np.where(cluster_ID[cluster_ID!=0]==i)[0])
+                    color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                    self.canvas2.SS.plot(t_ss[ix[idx]], iy[idx], '.', c=color*p+wht*(1-p), ms=self.ms2)
             
             ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
             for i in np.unique(cluster_ID[cluster_ID!=0]):
-                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[i-1], lw=2)
+                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[(i-1)%len(self.colors)], lw=2)
             
             self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
             self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
@@ -1610,7 +1629,7 @@ Keyboard shortcuts:
         text = """1. Load PC recording
     The same data as the one used in the CS detection process.
 2. Load output
-    The output file produced by using the abovementioned file.
+    The output file produced by using the above-mentioned file.
 Note: After the CS detection process, the files are already loaded here."""
         return text
     
@@ -1622,10 +1641,10 @@ Note: After the CS detection process, the files are already loaded here."""
     - Update to see the new plot. 
 2. Save the selected clusters.
     The selected CS clusters are saved in the save way as in the CS detection process:
-        - CS_onset: Times of CS onset (1 x #CSs)
-        - CS_offset: Times of CS offset (1 x #CSs)
-        - cluster_ID: Newly selected and labeled cluster ID for each CS (1 x #CSs)
-        - embedding: Two dimensional representation of CS feature space (#CSs x 2)"""
+        - CS_onset: Times of CS start (1 x # of CSs)
+        - CS_offset: Times of CS end (1 x # of CSs)
+        - cluster_ID: Newly selected and labeled cluster ID for each CS (1 x # of CSs)
+        - embedding: Two dimensional representation of CS feature space (# of CSs x 2)"""
         return text
     
     def info_plot_detected_CS(self):
