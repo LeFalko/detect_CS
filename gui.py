@@ -630,8 +630,9 @@ class Content(QWidget):
             print('cs_spans,i', self.cs_spans,self.cs_spans.shape,i)
             print('cs_spans[i]',self.cs_spans[:, i])
             patch = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
+            patch2 = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
             self.canvas.high_axes.add_patch(patch)
-            self.canvas.lfp_axes.add_patch(patch)
+            self.canvas.lfp_axes.add_patch(patch2)
         self.canvas.high_axes.set_xlim([0, self.t[-1]])
         self.canvas.high_axes.set_ylabel('Action potential')
         self.canvas.lfp_axes.plot(self.t, raw_data, 'tab:blue', lw=0.4)
@@ -1043,6 +1044,11 @@ Keyboard shortcuts:
         self.embedding = embedding
 
         print("\a")
+
+        cs_infobox = QMessageBox()
+        cs_infobox.setText('{} CSs found'.format(len(cs_onset)))
+        cs_infobox.exec()
+        
         self.save_detectFileDialog()
         
     def sort_clusters(self, cluster_ID):
@@ -1070,6 +1076,7 @@ Keyboard shortcuts:
         self.cluster_size = cluster_size_sorted
         self.clusters_selected = [i+1 for i in range(n_clusters)]
         self.is_cluster_selected = [True for i in range(n_clusters)]
+        
 
     def save_detectFileDialog(self):
         options = QFileDialog.Options()
@@ -1258,7 +1265,7 @@ Keyboard shortcuts:
         ms_label1 = QLabel("Marker size for feature space")
         layout.addRow(ms_label1, self.set_ms1())
         
-        layout.addRow(QLabel("SS raster sorting"), self.set_SS_sorting())
+        layout.addRow(QLabel("SS raster sort by"), self.set_SS_sorting())
 
         sigma_label = QLabel("Gaussian kernel size [ms]")
         sigma_label.setToolTip("Used for computing SS firing rate")
@@ -1509,10 +1516,17 @@ Keyboard shortcuts:
 
 
     def plot_detected_data(self):
+        
+        self.canvas2.CS.cla()
+        self.canvas2.LFP.cla()
+        self.canvas2.CS_clusters.cla()
+        self.canvas2.SS.cla()
+        self.canvas2.ax2.cla()
+        self.canvas2.draw()
 
         cluster_ID = self.cluster_ID_save
-        cs_offset = self.CS_offset
-        cs_onset = self.CS_onset
+        # cs_offset = self.CS_offset
+        # cs_onset = self.CS_onset
         embedding = self.embedding
         # print('cluster_ID',cluster_ID)
 
@@ -1521,12 +1535,6 @@ Keyboard shortcuts:
                 cluster_ID[self.cluster_ID == i+1] = 0
         # n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
         
-        self.canvas2.CS.cla()
-        self.canvas2.LFP.cla()
-        self.canvas2.CS_clusters.cla()
-        self.canvas2.SS.cla()
-        self.canvas2.ax2.cla()
-
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
             self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[(i-1)%len(self.colors)], ms=self.ms1)
@@ -1578,16 +1586,17 @@ Keyboard shortcuts:
             print('ss_sort', self.ss_sort)
             if self.ss_sort == 'cluster':
                 for i in np.unique(cluster_ID[cluster_ID!=0]):
-                    [iy, ix] = np.where(ss_aligned[cluster_ID[cluster_ID!=0]==i, :]==1)   
+                    [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==1)   
                     color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
                     self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
                     offset = offset + (cluster_ID==i).sum()
             elif self.ss_sort == 'time':
-                [iy, ix] = np.where(ss_aligned[cluster_ID[cluster_ID!=0]!=0, :]==1) 
+                [iy, ix] = np.where(ss_aligned[cluster_ID!=0, :]==1) 
                 for i in np.unique(cluster_ID[cluster_ID!=0]):
                     idx = np.in1d(iy, np.where(cluster_ID[cluster_ID!=0]==i)[0])
                     color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
                     self.canvas2.SS.plot(t_ss[ix[idx]], iy[idx], '.', c=color*p+wht*(1-p), ms=self.ms2)
+            self.canvas2.SS.set_ylim((0, len(cluster_ID[cluster_ID!=0])))
             
             ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
             for i in np.unique(cluster_ID[cluster_ID!=0]):
