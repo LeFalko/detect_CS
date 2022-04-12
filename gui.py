@@ -15,8 +15,10 @@ import matplotlib.patches as patches
 import matplotlib.colors as mplcolors
 import scipy.io as sp
 from scipy.ndimage import gaussian_filter1d
+import pandas as pd
 import numpy as np
 import sys
+import os
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat, create_random_intervals, concatenate_segments
 import uneye
 
@@ -107,6 +109,10 @@ class Content(QWidget):
         self.detect_HIGH = []
         self.weights = []
         self.output = []
+        self.detect_folder = "No folder selected"
+        self.output_folder = "No folder selected"
+        self.output_suffix = '_output'
+        self.logName = 'log'
         self.outputName = "No output"
         self.detect_fileName = "No file"
         self.CS_onset = []
@@ -886,7 +892,7 @@ class Content(QWidget):
         print(self.cs_spans_all)
         # self.Labels.append(labels)
         
-    # explanation texts for first tab
+    # explanation texts for the first tab
     def info_data_input(self):
         text = """1. Set initial parameters for labeling CSs. 
 2. Upload your recordings (stored in .mat format).
@@ -924,26 +930,8 @@ Keyboard shortcuts:
     # FUNCTIONS SECOND TAB
     # creating upload for files to detect on and plotting detected spikes third tab
     def create_detect_cs_box(self):
-        width = 400
+        width = 500
         detect_cs_layout = QVBoxLayout()
-
-        detect_upload_button = QPushButton("Upload a PC recording")
-        detect_upload_button.clicked.connect(self.upload_detection_file)
-        detect_upload_button.setFixedWidth(width)
-        
-        self.detect_upload_label = QLabel()
-        self.detect_upload_label.setText(self.detect_fileName)
-
-        detect_upload_weights_button = QPushButton("Upload your downloaded weights from Colab")
-        detect_upload_weights_button.clicked.connect(self.upload_weights)
-        detect_upload_weights_button.setFixedWidth(width)
-        
-        self.detect_upload_weights_label = QLabel()
-        self.detect_upload_weights_label.setText(self.outputName)
-
-        detecting_button = QPushButton('Detect CS')
-        detecting_button.clicked.connect(self.detect_CS_starter)
-        detecting_button.setFixedWidth(width)
         
         info_label = QLabel()
         info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
@@ -958,13 +946,130 @@ Keyboard shortcuts:
         widget1.setLayout(layout1)
         widget1.setContentsMargins(0,0,0,0)
         
+        detect_upload_button = QPushButton("Upload a PC recording")
+        detect_upload_button.clicked.connect(self.upload_detection_file)
+        detect_upload_button.setFixedWidth(width)
+        
+        self.detect_upload_label = QLabel()
+        self.detect_upload_label.setText(self.detect_fileName)
+
+        detect_upload_weights_button1 = QPushButton("Upload your downloaded weights from Colab")
+        detect_upload_weights_button1.clicked.connect(self.upload_weights)
+        detect_upload_weights_button1.setFixedWidth(width)
+        
+        self.detect_upload_weights_label1 = QLabel()
+        self.detect_upload_weights_label1.setText(self.outputName)
+        
+        detect_upload_weights_button2 = QPushButton("Upload your downloaded weights from Colab")
+        detect_upload_weights_button2.clicked.connect(self.upload_weights)
+        detect_upload_weights_button2.setFixedWidth(width)
+        
+        self.detect_upload_weights_label2 = QLabel()
+        self.detect_upload_weights_label2.setText(self.outputName)
+
+        detecting_button1 = QPushButton('Detect CS')
+        detecting_button1.clicked.connect(self.detect_CS_starter)
+        detecting_button1.setFixedWidth(width)
+        
+        detecting_button2 = QPushButton('Detect CS')
+        detecting_button2.clicked.connect(self.start_serial_CS_detection)
+        detecting_button2.setFixedWidth(width)
+        
+        select_detect_folder_button = QPushButton("Select folder")
+        select_detect_folder_button.clicked.connect(self.select_detect_folder)
+        select_detect_folder_button.setFixedWidth(width)
+        
+        self.select_detect_folder_label = QLabel(self.detect_folder)
+        
+        select_output_folder_button = QPushButton("Select folder to save output")
+        select_output_folder_button.clicked.connect(self.select_output_folder)
+        select_output_folder_button.setFixedWidth(width)
+        
+        self.select_output_folder_label = QLabel(self.detect_folder)
+        
+        output_suffix_widget = QWidget()
+        output_suffix_widget.setMaximumWidth(width)
+        # output_suffix_widget.setContentsMargins(0,0,0,0)
+        output_suffix_layout = QHBoxLayout()
+        output_file_label = QLabel('output file name: ')
+        output_file_label.setFixedWidth(150)
+        # output_suffix_layout.addWidget(output_file_label)
+        filename_label = QLabel('your_filename')
+        filename_label.setFixedWidth(100)
+        # output_suffix_layout.addWidget(filename_label)
+        self.output_line = QLineEdit(self.output_suffix)
+        self.output_line.setFixedWidth(100)
+        # output_suffix_layout.addWidget(self.output_line)
+        # output_suffix_layout.addWidget(QLabel('.mat'))
+        # output_suffix_layout.addStretch()
+        output_suffix_widget.setLayout(output_suffix_layout)
+        
+        log_widget = QWidget()
+        log_widget.setMaximumWidth(width)
+        log_layout = QHBoxLayout()
+        log_file_label = QLabel('log file name: ')
+        log_file_label.setFixedWidth(150)
+        # log_layout.addWidget(log_file_label)
+        self.log_line = QLineEdit(self.logName)
+        self.log_line.setFixedWidth(100)
+        # log_layout.addSpacing(110)
+        # log_layout.addWidget(self.log_line)
+        # log_layout.addWidget(QLabel('.csv'))
+        # log_layout.addStretch()
+        log_widget.setLayout(log_layout)
+        
+        input_widget = QWidget()
+        input_widget.setMaximumWidth(width)
+        input_layout = QGridLayout()
+        input_layout.addWidget(output_file_label, 0, 0)
+        input_layout.addWidget(QLabel('your_filename'), 0, 1)
+        input_layout.addWidget(self.output_line, 0, 2)
+        input_layout.addWidget(QLabel('.mat'), 0, 3)
+        input_layout.addWidget(QLabel('log name: '), 1, 0)
+        input_layout.addWidget(self.log_line, 1, 2)
+        input_layout.addWidget(QLabel('.mat'), 1, 3)
+        input_widget.setLayout(input_layout)
+        
+        single_file_box = QGroupBox("Single file")
+        single_file_layout = QVBoxLayout()
+        single_file_layout.addWidget(detect_upload_button)
+        single_file_layout.addWidget(self.detect_upload_label)
+        single_file_layout.addWidget(detect_upload_weights_button1)
+        single_file_layout.addWidget(self.detect_upload_weights_label1)
+        single_file_layout.addStretch()
+        single_file_layout.addWidget(detecting_button1)
+        single_file_box.setLayout(single_file_layout)
+        
+        folder_box = QGroupBox("Multiple files")
+        folder_layout = QVBoxLayout()
+        folder_layout.addWidget(select_detect_folder_button)
+        folder_layout.addWidget(self.select_detect_folder_label)
+        folder_layout.addWidget(select_output_folder_button)
+        folder_layout.addWidget(self.select_output_folder_label)
+        folder_layout.addWidget(detect_upload_weights_button2)
+        folder_layout.addWidget(self.detect_upload_weights_label2)
+        # folder_layout.addWidget(output_suffix_widget)
+        # folder_layout.addWidget(log_widget)
+        folder_layout.addWidget(input_widget)
+        folder_layout.addWidget(detecting_button2)
+        folder_box.setLayout(folder_layout)
+        # folder_box.setStyleSheet('border: 1px solid red;')
+        
         widget2 = QWidget()
         layout2 = QGridLayout()
-        layout2.addWidget(detect_upload_button, 1, 0)
-        layout2.addWidget(self.detect_upload_label, 1, 1)
-        layout2.addWidget(detect_upload_weights_button, 2, 0)
-        layout2.addWidget(self.detect_upload_weights_label, 2, 1)
-        layout2.addWidget(detecting_button, 3, 0)
+        
+        widget3 = QWidget()
+        layout3 = QHBoxLayout()
+        layout3.addStretch()
+        layout3.addWidget(single_file_box)
+        # layout3.addSpacing(100)
+        layout3.addStretch()
+        layout3.addWidget(folder_box)
+        layout3.addStretch()
+        widget3.setLayout(layout3)
+        
+        layout2.addWidget(widget3, 0, 0, 1, 2)
+
         layout2.setVerticalSpacing(100)
         widget2.setLayout(layout2)
         
@@ -985,6 +1090,22 @@ Keyboard shortcuts:
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         print(fileName)
         
+        self.load_detection_data(fileName)
+        # if fileName:
+        #     mat = sp.loadmat(fileName)
+        #     self.detect_LFP = get_field_mat(mat,['RAW'])
+        #     self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
+        #     self.detect_HIGH = get_field_mat(mat, ['HIGH'])
+        #     self.detect_HIGH = norm_high_pass(self.detect_HIGH)
+        #     self.mat = mat
+            
+        #     ext = fileName.split('.')[-1]
+        #     self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+        #     print(self.detect_fileName)
+        #     self.load_file_label.setText(self.detect_fileName)
+        #     self.detect_upload_label.setText(self.detect_fileName)
+            
+    def load_detection_data(self, fileName):
         if fileName:
             mat = sp.loadmat(fileName)
             self.detect_LFP = get_field_mat(mat,['RAW'])
@@ -998,17 +1119,29 @@ Keyboard shortcuts:
             print(self.detect_fileName)
             self.load_file_label.setText(self.detect_fileName)
             self.detect_upload_label.setText(self.detect_fileName)
+            
+    def select_detect_folder(self):
+        self.detect_folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print('selected detect folder,', self.detect_folder)
+        self.select_detect_folder_label.setText(self.detect_folder)
+        return self.detect_folder
+    
+    def select_output_folder(self):
+        self.output_folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print('selected save folder,', self.output_folder)
+        self.select_output_folder_label.setText(self.output_folder)
+        return self.output_folder
 
-    def get_simpleSpikes(self):
-        text, okPressed = QInputDialog.getText(self, "Enter SS data name", "Your data:", QLineEdit.Normal, "SS")
-        if okPressed and text != '':
-            self.SS_varname = text
+    # def get_simpleSpikes(self):
+    #     text, okPressed = QInputDialog.getText(self, "Enter SS data name", "Your data:", QLineEdit.Normal, "SS")
+    #     if okPressed and text != '':
+    #         self.SS_varname = text
 
-    def get_integerSS(self):
-        i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 1000, 0,
-                                           10000, 100)
-        if okPressed and i > 0:
-            self.sampling_rate_SS = i
+    # def get_integerSS(self):
+    #     i, okPressed = QInputDialog.getInt(self, "Enter sampling rate", "Sampling rate in Hz:", 1000, 0,
+    #                                        10000, 100)
+    #     if okPressed and i > 0:
+    #         self.sampling_rate_SS = i
 
     def upload_weights(self):
         options = QFileDialog.Options()
@@ -1017,39 +1150,55 @@ Keyboard shortcuts:
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.weights = fileName
-            self.detect_upload_weights_label.setText(self.weights.split('/')[-1])
+            self.detect_upload_weights_label1.setText(self.weights.split('/')[-1])
+            self.detect_upload_weights_label2.setText(self.weights.split('/')[-1])
 
     def detect_CS_starter(self):
-        runningbox = QMessageBox()
-        runningbox.show()
-        runningbox.setWindowTitle("Running")
-        runningbox.setText("No CSs detected")
+        self.runningbox = QMessageBox()
+        self.runningbox.show()
+        self.runningbox.setWindowTitle("Running")
+        self.runningbox.setText("No CSs detected")
         # runningbox.exec()
         
-        print('popup')
+        # output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
+        self.runningbox.done(1)
+        
+        # cs_onset = output['cs_onset']
+        # cs_offset = output['cs_offset']
+        # cluster_ID = output['cluster_ID']
+        # embedding = output['embedding']
+        # # print(cs_onset.shape, cluster_ID.shape, embedding.shape)
+        
+        # self.sort_clusters(cluster_ID)
+        
+        # self.CS_onset = cs_onset
+        # self.CS_offset = cs_offset
+        # self.embedding = embedding
+        
+        self.process_detect_CS()
+        
+        self.runningbox.done(1)
+        print("\a")
+
+        cs_infobox = QMessageBox()
+        cs_infobox.setText('{} CSs found'.format(len(self.CS_onset)))
+        cs_infobox.exec()
+        
+        self.save_detectFileDialog()
+        
+    def process_detect_CS(self):
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
         print('Detecting CSs...')
-        runningbox.done(1)
-        
         cs_onset = output['cs_onset']
         cs_offset = output['cs_offset']
         cluster_ID = output['cluster_ID']
         embedding = output['embedding']
-        # print(cs_onset.shape, cluster_ID.shape, embedding.shape)
         
         self.sort_clusters(cluster_ID)
         
         self.CS_onset = cs_onset
         self.CS_offset = cs_offset
         self.embedding = embedding
-
-        print("\a")
-
-        cs_infobox = QMessageBox()
-        cs_infobox.setText('{} CSs found'.format(len(cs_onset)))
-        cs_infobox.exec()
-        
-        self.save_detectFileDialog()
         
     def sort_clusters(self, cluster_ID):
         # sort clusters by cluster size
@@ -1079,13 +1228,27 @@ Keyboard shortcuts:
         
 
     def save_detectFileDialog(self):
+        self.output_suffix = self.output_line.text()
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.detect_fileName.split('.')[-2]+'_output.mat',
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.detect_fileName.split('.')[-2]+ self.output_suffix + '.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
         print('self.detect_fileName',self.detect_fileName)
         print('fileName',fileName)
+        self.save_detectedCS
+        # if fileName:
+        #     sp.savemat(fileName, {'CS_onset': self.CS_onset,
+        #                           'CS_offset': self.CS_offset,
+        #                           'cluster_ID': self.cluster_ID,
+        #                           'embedding': self.embedding}, do_compression=True)
+            
+        #     ext =  fileName.split('.')[-1]
+        #     self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+            
+        #     self.load_output_label.setText(self.outputName)
+            
+    def save_detectedCS(self, fileName):
         if fileName:
             sp.savemat(fileName, {'CS_onset': self.CS_onset,
                                   'CS_offset': self.CS_offset,
@@ -1097,13 +1260,131 @@ Keyboard shortcuts:
             
             self.load_output_label.setText(self.outputName)
             
-    # explanation texts for first tab
+    def start_serial_CS_detection(self):
+        
+        def msgButtonClick(click):
+            if click.text() == 'Proceed':
+                
+                self.output_suffix = self.output_line.text()
+                print('self.output_suffix',self.output_suffix)
+                print(click.text())
+                self.process_serial_CS_detection(matfiles, correct_file_list)
+            else:
+                print(click.text())
+        _filenames = next(os.walk(self.detect_folder), (None, None, []))[2]
+        # print('filenames', _filenames)
+        matfiles = [filename for filename in _filenames if filename[-4:] == '.mat']
+        # print(matfiles)
+        correct_file_list = self.make_correct_file_list(matfiles)
+        idx = np.where(np.invert(correct_file_list))[0]
+        failed_file_list = [matfiles[i] for i in idx]
+        text1 = '{}/{} files will be inspected. \n'.format(len(matfiles)-len(idx), len(matfiles))
+        text2 = 'Following {} files will not be inspected. Check the format again:\n\n'.format(len(idx))
+        text3 = '\n'.join(failed_file_list)
+        
+        message_box = QMessageBox()
+        message_box.setText(text1+text2+text3)
+        message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        message_box.buttonClicked.connect(msgButtonClick)
+        buttonY = message_box.button(QMessageBox.Ok)
+        buttonY.setText('Proceed')
+        buttonN = message_box.button(QMessageBox.Cancel)
+        buttonN.setText('Cancel')
+        message_box.exec()
+        
+        return
+    
+    
+    def make_correct_file_list(self, matfiles):
+        n_files = len(matfiles)
+        correct_high_shape_list = np.zeros(n_files, dtype=bool)
+        correct_lfp_shape_list = np.zeros(n_files, dtype=bool)
+        is_same_shape_list = np.zeros(n_files, dtype=bool)
+        for i, file in enumerate(matfiles):
+            # print('file',file)
+            matfile = sp.whosmat(self.detect_folder + '/' + file)
+            high_contain_list = list(map(lambda var: True if var[0] == self.HIGH_varname else False, matfile))
+            print(high_contain_list)
+            if sum(high_contain_list) > 0:
+                high_shape = matfile[high_contain_list.index(True)][1]
+                # print('high_shape',high_shape)
+                if len(high_shape) == 2:
+                    correct_high_shape = (high_shape[0] == 1 and  high_shape[1] > 1)
+                else:
+                    correct_high_shape = False
+            else:
+                correct_high_shape = False
+            # print('correct_high_shape', correct_high_shape)
+            correct_high_shape_list[i] = correct_high_shape
+            
+            lfp_contain_list = list(map(lambda var: True if var[0] == self.LFP_varname else False, matfile))
+            print(lfp_contain_list)
+            if sum(lfp_contain_list) > 0:
+                lfp_shape = matfile[lfp_contain_list.index(True)][1]
+                if len(lfp_shape) == 2:
+                    correct_lfp_shape = (lfp_shape[0] == 1 and  lfp_shape[1] > 1)
+                else:
+                    correct_lfp_shape == False
+            else:
+                correct_lfp_shape = False
+            # print('correct_lfp_shape', correct_lfp_shape)
+            correct_lfp_shape_list[i] = correct_lfp_shape
+            
+            if correct_high_shape and correct_lfp_shape:
+                is_same_shape = high_shape[1] == lfp_shape[1]
+            else:
+                is_same_shape = False
+            is_same_shape_list[i] = is_same_shape 
+            
+        # print('correct_high_shape_list',correct_high_shape_list)
+        # print('correct_lfp_shape_list',correct_lfp_shape_list)
+        # print('is_same_shape_list',is_same_shape_list)
+        
+        correct_file_list = correct_high_shape_list * correct_lfp_shape_list * is_same_shape_list
+        print('correct_file_list',correct_file_list)
+        
+        return correct_file_list
+    
+    def process_serial_CS_detection(self, matfiles, correct_file_list):
+        idx = np.where(correct_file_list)[0]
+        files_new = [matfiles[i] for i in idx]
+        n_files = len(files_new)
+        logfile = pd.DataFrame(files_new, columns=['file name'])
+        n_cs = np.zeros(n_files, dtype=int)
+        n_clusters = np.zeros(n_files, dtype=int)
+        cluster_size = np.zeros(n_files, dtype=object)
+        
+        for i, file in enumerate(files_new):                
+            fileName = self.detect_folder + '/' + files_new[i]
+            print('process...', correct_file_list[i], fileName)
+            print('output_folder:',self.output_folder)
+            self.load_detection_data(fileName)
+            self.process_detect_CS()
+            
+            n_cs[i] = len(self.CS_onset)
+            n_clusters[i] = self.n_clusters
+            cluster_size[i] = self.cluster_size.astype(int)
+            
+            
+            
+            saveName = self.output_folder + '/' + files_new[i].split('.')[-2] + self.output_suffix + '.mat'
+            print('saveName',saveName)
+            self.save_detectedCS(saveName)
+        
+        logfile['#CS'] = n_cs.tolist()
+        logfile['#clusters'] = n_clusters.tolist()
+        logfile['cluster size'] = cluster_size.tolist()
+        print(logfile)
+        
+        logfile.to_csv(self.output_folder + '/' + self.logName + '.csv', index=False)
+             
+    # explanation texts for the second tab
     def info_detect_CS(self):
         text = """1. Upload a file in which you want to detect CSs (stored in .mat format as in labeling process).
     - high band-passed action potential (1 x time)
     - low band-passed LFP signal (1 x time)
     - SS train (1 x time, 1 if the spike is fired, otherwise 0)
-    SS train is optional and not used for CS detection, but useful for post-processing. 
+    SS train is optional and not used for CS detection, but useful for post-pr4ocessing. 
     Sampling frequency of the SS train can be lower than the other signals.
     Although not recommended, in case no LFP signal is available, try using the same high band-passed signal as LFP.
 2. Upload the weights of the network trained in Google Colab.
@@ -1182,8 +1463,7 @@ Keyboard shortcuts:
         load_box_layout.setContentsMargins(0,0,0,0) 
         load_box_layout.setSpacing(0)
         self.load_files_for_plot_box.setLayout(load_box_layout)
-        # self.load_files_for_plot_box.setStyleSheet("border: 1px solid black;")
-                
+        # self.load_files_for_plot_box.setStyleSheet("border: 1px solid black;")        
         
     def create_show_data_box(self):
         show_data_layout = QVBoxLayout()
@@ -1633,7 +1913,7 @@ Keyboard shortcuts:
         self.save_CS_offset = self.CS_offset[selected_indices]
         self.save_embedding = self.embedding[selected_indices, :].squeeze()
 
-    # explanation texts for first tab
+    # explanation texts for the third tab
     def info_loading_files_for_plot(self):
         text = """1. Load PC recording
     The same data as the one used in the CS detection process.
