@@ -543,6 +543,7 @@ class Content(QWidget):
     def set_HighVarname(self):
         def changeText():
             self.HIGH_varname = lineedit.text()
+                
         lineedit = QLineEdit(self.HIGH_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
@@ -939,9 +940,13 @@ Keyboard shortcuts:
         info_label.setToolTip(self.info_detect_CS())
         info_label.setFixedHeight(30)
         
+        setting_button = QPushButton("Set parameters")
+        setting_button.clicked.connect(self.open_setting_box2)
+        
         widget1 = QWidget()
         layout1 = QHBoxLayout()
         layout1.addWidget(info_label)
+        layout1.addWidget(setting_button)
         layout1.addStretch()
         widget1.setLayout(layout1)
         widget1.setContentsMargins(0,0,0,0)
@@ -989,19 +994,14 @@ Keyboard shortcuts:
         
         output_suffix_widget = QWidget()
         output_suffix_widget.setMaximumWidth(width)
-        # output_suffix_widget.setContentsMargins(0,0,0,0)
         output_suffix_layout = QHBoxLayout()
         output_file_label = QLabel('output file name: ')
         output_file_label.setFixedWidth(150)
-        # output_suffix_layout.addWidget(output_file_label)
         filename_label = QLabel('your_filename')
         filename_label.setFixedWidth(100)
-        # output_suffix_layout.addWidget(filename_label)
         self.output_line = QLineEdit(self.output_suffix)
         self.output_line.setFixedWidth(100)
-        # output_suffix_layout.addWidget(self.output_line)
-        # output_suffix_layout.addWidget(QLabel('.mat'))
-        # output_suffix_layout.addStretch()
+
         output_suffix_widget.setLayout(output_suffix_layout)
         
         log_widget = QWidget()
@@ -1009,13 +1009,9 @@ Keyboard shortcuts:
         log_layout = QHBoxLayout()
         log_file_label = QLabel('log file name: ')
         log_file_label.setFixedWidth(150)
-        # log_layout.addWidget(log_file_label)
         self.log_line = QLineEdit(self.logName)
         self.log_line.setFixedWidth(100)
-        # log_layout.addSpacing(110)
-        # log_layout.addWidget(self.log_line)
-        # log_layout.addWidget(QLabel('.csv'))
-        # log_layout.addStretch()
+
         log_widget.setLayout(log_layout)
         
         input_widget = QWidget()
@@ -1027,7 +1023,7 @@ Keyboard shortcuts:
         input_layout.addWidget(QLabel('.mat'), 0, 3)
         input_layout.addWidget(QLabel('log name: '), 1, 0)
         input_layout.addWidget(self.log_line, 1, 2)
-        input_layout.addWidget(QLabel('.mat'), 1, 3)
+        input_layout.addWidget(QLabel('.csv'), 1, 3)
         input_widget.setLayout(input_layout)
         
         single_file_box = QGroupBox("Single file")
@@ -1048,12 +1044,9 @@ Keyboard shortcuts:
         folder_layout.addWidget(self.select_output_folder_label)
         folder_layout.addWidget(detect_upload_weights_button2)
         folder_layout.addWidget(self.detect_upload_weights_label2)
-        # folder_layout.addWidget(output_suffix_widget)
-        # folder_layout.addWidget(log_widget)
         folder_layout.addWidget(input_widget)
         folder_layout.addWidget(detecting_button2)
         folder_box.setLayout(folder_layout)
-        # folder_box.setStyleSheet('border: 1px solid red;')
         
         widget2 = QWidget()
         layout2 = QGridLayout()
@@ -1062,7 +1055,6 @@ Keyboard shortcuts:
         layout3 = QHBoxLayout()
         layout3.addStretch()
         layout3.addWidget(single_file_box)
-        # layout3.addSpacing(100)
         layout3.addStretch()
         layout3.addWidget(folder_box)
         layout3.addStretch()
@@ -1080,6 +1072,23 @@ Keyboard shortcuts:
         detect_cs_layout.addStretch()
 
         self.detect_cs_box.setLayout(detect_cs_layout)
+        
+    def open_setting_box2(self):
+        dialog = QDialog()
+        dialog.setWindowTitle("Setting")
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.close)
+        layout = QFormLayout()
+        layout.addRow(QLabel("Set variable names before loading files."))
+        layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
+        layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
+        layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
+        layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
+        # layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
+        layout.addRow(ok_button)
+        dialog.setLayout(layout)
+        dialog.exec_()
+        dialog.show()
 
     # creating file upload dialog
 
@@ -1091,26 +1100,13 @@ Keyboard shortcuts:
         print(fileName)
         
         self.load_detection_data(fileName)
-        # if fileName:
-        #     mat = sp.loadmat(fileName)
-        #     self.detect_LFP = get_field_mat(mat,['RAW'])
-        #     self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
-        #     self.detect_HIGH = get_field_mat(mat, ['HIGH'])
-        #     self.detect_HIGH = norm_high_pass(self.detect_HIGH)
-        #     self.mat = mat
-            
-        #     ext = fileName.split('.')[-1]
-        #     self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
-        #     print(self.detect_fileName)
-        #     self.load_file_label.setText(self.detect_fileName)
-        #     self.detect_upload_label.setText(self.detect_fileName)
             
     def load_detection_data(self, fileName):
         if fileName:
             mat = sp.loadmat(fileName)
-            self.detect_LFP = get_field_mat(mat,['RAW'])
+            self.detect_LFP = get_field_mat(mat,[self.LFP_varname])
             self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
-            self.detect_HIGH = get_field_mat(mat, ['HIGH'])
+            self.detect_HIGH = get_field_mat(mat, [self.HIGH_varname])
             self.detect_HIGH = norm_high_pass(self.detect_HIGH)
             self.mat = mat
             
@@ -1161,7 +1157,7 @@ Keyboard shortcuts:
         # runningbox.exec()
         
         # output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
-        self.runningbox.done(1)
+        # self.runningbox.done(1)
         
         # cs_onset = output['cs_onset']
         # cs_offset = output['cs_offset']
@@ -1236,7 +1232,7 @@ Keyboard shortcuts:
 
         print('self.detect_fileName',self.detect_fileName)
         print('fileName',fileName)
-        self.save_detectedCS
+        self.save_detectedCS(fileName)
         # if fileName:
         #     sp.savemat(fileName, {'CS_onset': self.CS_onset,
         #                           'CS_offset': self.CS_offset,
@@ -1358,6 +1354,11 @@ Keyboard shortcuts:
             fileName = self.detect_folder + '/' + files_new[i]
             print('process...', correct_file_list[i], fileName)
             print('output_folder:',self.output_folder)
+            
+            runningbox = QMessageBox()
+            runningbox.show()
+            runningbox.setWindowTitle("{}/{} files...".format(i+1, len(files_new)))
+            
             self.load_detection_data(fileName)
             self.process_detect_CS()
             
@@ -1365,7 +1366,7 @@ Keyboard shortcuts:
             n_clusters[i] = self.n_clusters
             cluster_size[i] = self.cluster_size.astype(int)
             
-            
+            runningbox.done(1)
             
             saveName = self.output_folder + '/' + files_new[i].split('.')[-2] + self.output_suffix + '.mat'
             print('saveName',saveName)
@@ -1418,11 +1419,16 @@ Keyboard shortcuts:
         info_label.setPixmap(info_icon.pixmap(20, 20))
         info_label.setFixedWidth(30)
         info_label.setToolTip(self.info_loading_files_for_plot())
-        # info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignTop)
         info_label.setAlignment(Qt.AlignHCenter)
         info_label.setContentsMargins(0,10,0,0)
         
         width = 220
+        
+        setting_box = QPushButton("Set parameters")
+        setting_box.setFixedWidth(width)
+        setting_box.clicked.connect(self.open_setting_box2)
+        
         load_file_widget = QWidget()
         load_file_layout = QHBoxLayout()
         load_file_layout.setContentsMargins(0, 10, 10, 0)
@@ -1451,6 +1457,7 @@ Keyboard shortcuts:
         
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.addWidget(setting_box)
         layout.addWidget(load_file_widget)
         layout.addWidget(load_output_widget)
         layout.setContentsMargins(0,0,0,0) 
@@ -1515,7 +1522,7 @@ Keyboard shortcuts:
         self.select_show_data_box.setLayout(show_data_layout)
         # self.select_show_data_box.setStyleSheet('border: 1px solid red;')
         
-    def open_setting_box2(self):
+    def open_setting_box3(self):
         dialog = QDialog()
         dialog.setWindowTitle("Set parameters")
         ok_button = QPushButton("OK")
@@ -1760,7 +1767,7 @@ Keyboard shortcuts:
         toolbar = NavigationToolbar(self.canvas2, self)
         
         setting_button = QPushButton("Setting for plot")
-        setting_button.clicked.connect(self.open_setting_box2)
+        setting_button.clicked.connect(self.open_setting_box3)
         
         plotting_button = QPushButton('Plot data')
         plotting_button.clicked.connect(self.plot_detected_data)
