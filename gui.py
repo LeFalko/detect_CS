@@ -22,8 +22,6 @@ import os
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat, create_random_intervals, concatenate_segments
 import uneye
 
-# from IPython import embed; 
-
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -167,7 +165,6 @@ class Content(QWidget):
 
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
-        # self.information_box = QGroupBox("Please note:")
         self.save_box = QGroupBox("Save training data")
         self.loaded_files_box = QGroupBox("Loaded files")
         self.select_cs_box = QGroupBox("Select CSs")
@@ -176,9 +173,6 @@ class Content(QWidget):
         # List of loaded files
         self.loaded_file_listWidget = QListWidget() 
         self.loaded_file_listWidget.setFixedHeight(self.loaded_files_box.height()-70)
-        # self.loaded_file_listWidget.setStyleSheet('border: 1px solid red;')
-        # self.loaded_file_listWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        print(self.loaded_file_listWidget.height())
 
         self.loaded_file_listWidget.update()
         
@@ -996,6 +990,7 @@ Keyboard shortcuts:
         output_suffix_widget.setMaximumWidth(width)
         output_suffix_layout = QHBoxLayout()
         output_file_label = QLabel('output file name: ')
+        output_file_label.setToolTip("The name of the output file will be based on each of the input files.")
         output_file_label.setFixedWidth(150)
         filename_label = QLabel('your_filename')
         filename_label.setFixedWidth(100)
@@ -1021,7 +1016,9 @@ Keyboard shortcuts:
         input_layout.addWidget(QLabel('your_filename'), 0, 1)
         input_layout.addWidget(self.output_line, 0, 2)
         input_layout.addWidget(QLabel('.mat'), 0, 3)
-        input_layout.addWidget(QLabel('log name: '), 1, 0)
+        log_label = QLabel('log name: ')
+        log_label.setToolTip("Information about detected CSs for each file will be saved in this file.")
+        input_layout.addWidget(log_label, 1, 0)
         input_layout.addWidget(self.log_line, 1, 2)
         input_layout.addWidget(QLabel('.csv'), 1, 3)
         input_widget.setLayout(input_layout)
@@ -1036,7 +1033,7 @@ Keyboard shortcuts:
         single_file_layout.addWidget(detecting_button1)
         single_file_box.setLayout(single_file_layout)
         
-        folder_box = QGroupBox("Multiple files")
+        folder_box = QGroupBox("Multiple files in a folder")
         folder_layout = QVBoxLayout()
         folder_layout.addWidget(select_detect_folder_button)
         folder_layout.addWidget(self.select_detect_folder_label)
@@ -1529,9 +1526,9 @@ Keyboard shortcuts:
         ok_button.clicked.connect(dialog.close)
         layout = QFormLayout()
         
-        layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
-        layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
-        layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
+        # layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
+        # layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
+        # layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
         
         cs_xlim_widget = QWidget()
         cs_xlim_layout = QHBoxLayout()
@@ -1545,14 +1542,16 @@ Keyboard shortcuts:
         cs_xlim_label = QLabel("Time range for CS & LFP [ms]")
         cs_xlim_label.setToolTip("Time range of action potential and LFP from CS onset")
         
-        layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
+        # layout.addRow(QLabel("SS train variable name"), self.set_SSVarname())
         layout.addRow(QLabel("SS sampling rate [Hz]"), self.set_samplingRate_SS())
         layout.addRow(cs_xlim_label, cs_xlim_widget)      
                 
         ms_label1 = QLabel("Marker size for feature space")
         layout.addRow(ms_label1, self.set_ms1())
         
-        layout.addRow(QLabel("SS raster sort by"), self.set_SS_sorting())
+        ss_sort_label = QLabel("SS raster sort by")
+        ss_sort_label.setToolTip("Sort SSs by CS cluster or time")
+        layout.addRow(ss_sort_label, self.set_SS_sorting())
 
         sigma_label = QLabel("Gaussian kernel size [ms]")
         sigma_label.setToolTip("Used for computing SS firing rate")
@@ -1954,11 +1953,11 @@ Note: After the CS detection process, the files are already loaded here."""
         return text
 
 def create():
+    print("App running...")
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
     main = Frame()
     main.show()
     sys.exit(app.exec_())
-
 
 create()
