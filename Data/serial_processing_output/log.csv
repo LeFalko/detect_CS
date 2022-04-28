@@ -2,5 +2,5 @@ file name,#CS,#clusters,cluster size
 PC_EMI_S1_Left_05-12-2017_AOData.mat,43,1,[43]
 PC_EMI_S1_Left_06-11-2017_AOData.mat,45,3,[43  1  1]
 PC_EMI_S1_Left_06-12-2017_AOData.mat,63,3,[45 17  1]
-PC_EMI_S1_Left_08-11-2017_AOData.mat,39,1,[39]
+PC_EMI_S1_Left_08-11-2017_AOData.mat,40,2,[39  1]
 PC_EMI_S1_Left_10-08-2017_AOData.mat,47,1,[47]

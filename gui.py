@@ -495,9 +495,10 @@ class Content(QWidget):
             self.upload_LFP = self.LFP[idx]
             self.upload_HIGH = self.HIGH[idx]
             self.label = self.Labels[idx]
+            self.upload_fileName = self.ID[idx]
             self.cs_spans = self.cs_spans_all[idx]
             print(self.ID[idx])
-            print('self.cs_spans',self.cs_spans)
+            print('cs_spans',self.cs_spans)
             self.plot_data()
             self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
     
@@ -1353,6 +1354,7 @@ Keyboard shortcuts:
             print('output_folder:',self.output_folder)
             
             runningbox = QMessageBox()
+            runningbox.setFixedWidth(300)
             runningbox.show()
             runningbox.setWindowTitle("{}/{} files...".format(i+1, len(files_new)))
             
@@ -1557,7 +1559,7 @@ Keyboard shortcuts:
         sigma_label.setToolTip("Used for computing SS firing rate")
         layout.addRow(sigma_label, self.set_sigma())
         
-        ms_label2 = QLabel("Marker size for SS")
+        ms_label2 = QLabel("Marker size for SS raster")
         layout.addRow(ms_label2, self.set_ms2())
         
         ss_xlim_widget = QWidget()
@@ -1570,8 +1572,8 @@ Keyboard shortcuts:
         ss_xlim_layout.addWidget(self.set_time_after_CS_for_SS())
         ss_xlim_widget.setLayout(ss_xlim_layout)
         
-        ss_xlim_label = QLabel("Time range for SS [ms]")
-        ss_xlim_label.setToolTip("Time range of SS from CS onset")
+        ss_xlim_label = QLabel("Time range for SS raster [ms]")
+        ss_xlim_label.setToolTip("Time range of SS raster from CS onset")
         
         layout.addRow(ss_xlim_label, ss_xlim_widget)
         layout.addRow(ok_button)
