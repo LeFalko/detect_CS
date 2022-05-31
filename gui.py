@@ -435,7 +435,7 @@ class Content(QWidget):
         self.loaded_file_listWidget.clear()
         self.loaded_file_listWidget.addItems(self.ID)
         self.loaded_file_listWidget.setCurrentRow(len(self.ID)-1)
-        print(self.loaded_file_listWidget.currentRow())
+        # print('loaded_file_listWidget.currentRow()', self.loaded_file_listWidget.currentRow())
                 
         plot_file_button = QPushButton("Plot")
         plot_file_button.clicked.connect(self.set_current_file)        
@@ -475,7 +475,7 @@ class Content(QWidget):
         
     def remove_loaded_file(self):
         idx = self.loaded_file_listWidget.currentRow()
-        print(idx)
+        print('index removed',idx)
         if self.LFP:
             self.loaded_file_listWidget.takeItem(idx)
             self.ID.pop(idx)
@@ -490,15 +490,15 @@ class Content(QWidget):
     
     def set_current_file(self):
         idx = self.loaded_file_listWidget.currentRow()
-        print(idx)
+        # print('current index: ',idx)
         if self.LFP:
             self.upload_LFP = self.LFP[idx]
             self.upload_HIGH = self.HIGH[idx]
             self.label = self.Labels[idx]
             self.upload_fileName = self.ID[idx]
             self.cs_spans = self.cs_spans_all[idx]
-            print(self.ID[idx])
-            print('cs_spans',self.cs_spans)
+            print('cell: ',self.ID[idx])
+            print('cs_spans: ',self.cs_spans)
             self.plot_data()
             self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
     
@@ -561,22 +561,33 @@ class Content(QWidget):
 
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
-        self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
-        self.upload_LFP = np.array(mat[self.LFP_varname][0])
-        self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
-        self.interval_inspected = np.zeros_like(self.upload_LFP)
-        self.cs_span = np.zeros(2)
-        self.cs_spans = np.array([[]])
-        self.cs_patch = []
-        self.cs_patch2 = []
-        self.ID.append(self.upload_fileName)
-        self.LFP.append(self.upload_LFP)
-        self.HIGH.append(self.upload_HIGH)
-        self.Labels.append(self.label)
-        self.cs_spans_all.append(self.cs_spans)
-        self.Intervals_inspected.append(self.interval_inspected)
-        self.plot_data()
-        self.create_loaded_files_box()
+        if not self.LFP_varname in mat.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + self.LFP_varname +"] not found.")
+            errorbox.exec_()
+        elif not self.HIGH_varname in mat.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + self.HIGH_varname +"] not found.")
+            errorbox.exec_() 
+        else:
+            self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
+            self.upload_LFP = np.array(mat[self.LFP_varname][0])
+            self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
+            self.interval_inspected = np.zeros_like(self.upload_LFP)
+            self.cs_span = np.zeros(2)
+            self.cs_spans = np.array([[]])
+            self.cs_patch = []
+            self.cs_patch2 = []
+            self.ID.append(self.upload_fileName)
+            self.LFP.append(self.upload_LFP)
+            self.HIGH.append(self.upload_HIGH)
+            self.Labels.append(self.label)
+            self.cs_spans_all.append(self.cs_spans)
+            self.Intervals_inspected.append(self.interval_inspected)
+            self.plot_data()
+            self.create_loaded_files_box()
 
     def saveFileDialog(self):
         options = QFileDialog.Options()
@@ -620,16 +631,16 @@ class Content(QWidget):
         high_data = self.upload_HIGH
         #print(raw_data, high_data)
 
-        self.t = np.linspace(0, len(self.upload_LFP)/self.sampling_rate, len(self.upload_LFP))
+        self.t = np.linspace(0, len(self.upload_HIGH)/self.sampling_rate, len(self.upload_HIGH))
 
         self.canvas.high_axes.cla()
         self.canvas.lfp_axes.cla()
         self.canvas.high_axes.plot(self.t, high_data, 'tab:blue', lw=0.4)
-        print('cs_spans_all', self.cs_spans_all)
+        print('cs_spans_all: ', self.cs_spans_all)
         for i in range(self.cs_spans.shape[1]):
             ylim = self.canvas.high_axes.get_ylim()
             
-            print('cs_spans,i', self.cs_spans,self.cs_spans.shape,i)
+            # print('cs_spans,i', self.cs_spans,self.cs_spans.shape,i)
             print('cs_spans[i]',self.cs_spans[:, i])
             patch = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
             patch2 = patches.Rectangle((self.t[self.cs_spans[0, i]], ylim[0]), np.diff(self.t[self.cs_spans[:,i]]), np.diff(ylim), linewidth=1, edgecolor='k', facecolor='r', alpha=0.2, zorder=2)
@@ -651,14 +662,16 @@ class Content(QWidget):
     
     # Selecting CS 
     def click_control(self, event):
-        if self.canvas.high_axes.patches:
+        if self.canvas.high_axes.patches or self.canvas.lfp_axes.patches:
             # for i in range(self.cs_spans.T.shape[0]):
             for i in range(len(self.canvas.high_axes.patches)):
                 # if (event.xdata >=self.t[self.cs_spans[0, i]]) and (event.xdata<=self.t[self.cs_spans[1, i]]):
                 x1 = self.canvas.high_axes.patches[i].get_x()
                 x2 = self.canvas.high_axes.patches[i].get_x() + self.canvas.high_axes.patches[i].get_width()[0]
                 print('x1,x2,event.xdata',x1,x2,event.xdata)
-                if (event.xdata >= x1) and (event.xdata <= x2):  
+                x_max = max([x1, x2])
+                x_min = min([x1, x2])
+                if (event.xdata >= x_min) and (event.xdata <= x_max):  
                     self.canvas.high_axes.patches.pop(i)
                     self.canvas.lfp_axes.patches.pop(i)
                     self.canvas.draw_idle()
@@ -690,8 +703,9 @@ class Content(QWidget):
             self.cs_patch2.set_width(np.diff(self.cs_span))
             
             if abs(np.diff(self.cs_span))<0.001: # if span is too short, it doesn't count
-                print('diff',self.cs_span[0],self.cs_span[1],event.xdata,abs(np.diff(self.cs_span)))
+                # print('diff',self.cs_span[0],self.cs_span[1],event.xdata,abs(np.diff(self.cs_span)))
                 self.canvas.high_axes.patches.pop()
+                self.canvas.lfp_axes.patches.pop()
             self.canvas.draw_idle()
             self.is_clicked = False
             self.cs_span = np.empty(2)
@@ -712,7 +726,7 @@ class Content(QWidget):
             
             idx = np.argsort(onset)
             self.cs_spans = cs_spans[:, idx].astype(int)
-            print('self.cs_spans',self.cs_spans, self.cs_spans.shape, np.argsort(onset))
+            print('cs_spans:',self.cs_spans, self.cs_spans.shape, np.argsort(onset))
             self.create_labels()
             self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
             
@@ -750,7 +764,7 @@ class Content(QWidget):
         lims = self.canvas.lfp_axes.get_xlim()
         xlim = [lims[0], lims[0]+width]
         x0 = np.floor(xlim[0] * self.step / width).astype(int)
-        print(xlim[0], x0)
+        # print(xlim[0], x0)
         self.scroll.setValue(x0)
         self.lims = np.array([0, width])
         self.setupSlider(minimum, maximum, self.step, x0)
@@ -779,7 +793,7 @@ class Content(QWidget):
         width = 0.05
         center = np.mean(self.canvas.high_axes.get_xlim())
         idx_center = np.absolute(self.t-center).argmin().astype(int)
-        print('center',center, idx_center, self.cs_spans[0,:])
+        # print('center',center, idx_center, self.cs_spans[0,:])
         if self.cs_spans.T.shape[0]>0:
             idx0 = np.where(self.cs_spans[0,:]<idx_center)[0]
             if len(idx0)>0:
@@ -794,7 +808,7 @@ class Content(QWidget):
         width = 0.05
         center = np.mean(self.canvas.high_axes.get_xlim())
         idx_center = np.absolute(self.t-center).argmin().astype(int)
-        print('center',center, idx_center, self.cs_spans[0,:])
+        # print('center',center, idx_center, self.cs_spans[0,:])
         if self.cs_spans.T.shape[0]>0:
             idx0 = np.where(self.cs_spans[0,:]>idx_center)[0]
             if len(idx0)>0:
@@ -1102,17 +1116,28 @@ Keyboard shortcuts:
     def load_detection_data(self, fileName):
         if fileName:
             mat = sp.loadmat(fileName)
-            self.detect_LFP = get_field_mat(mat,[self.LFP_varname])
-            self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
-            self.detect_HIGH = get_field_mat(mat, [self.HIGH_varname])
-            self.detect_HIGH = norm_high_pass(self.detect_HIGH)
-            self.mat = mat
-            
-            ext = fileName.split('.')[-1]
-            self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
-            print(self.detect_fileName)
-            self.load_file_label.setText(self.detect_fileName)
-            self.detect_upload_label.setText(self.detect_fileName)
+            if not self.LFP_varname in mat.keys():
+                errorbox = QMessageBox()
+                errorbox.setWindowTitle("Error")
+                errorbox.setText("Variable [" + self.LFP_varname +"] not found.")
+                errorbox.exec_()
+            elif not self.HIGH_varname in mat.keys():
+                errorbox = QMessageBox()
+                errorbox.setWindowTitle("Error")
+                errorbox.setText("Variable [" + self.HIGH_varname +"] not found.")
+                errorbox.exec_() 
+            else:
+                self.detect_LFP = get_field_mat(mat,[self.LFP_varname])
+                self.detect_LFP = norm_LFP(self.detect_LFP, self.sampling_rate)
+                self.detect_HIGH = get_field_mat(mat, [self.HIGH_varname])
+                self.detect_HIGH = norm_high_pass(self.detect_HIGH)
+                self.mat = mat
+                
+                ext = fileName.split('.')[-1]
+                self.detect_fileName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
+                print(self.detect_fileName)
+                self.load_file_label.setText(self.detect_fileName)
+                self.detect_upload_label.setText(self.detect_fileName)
             
     def select_detect_folder(self):
         self.detect_folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -1200,11 +1225,11 @@ Keyboard shortcuts:
         n_clusters = len(clusters)
         cluster_size = np.zeros(n_clusters)
         cluster_ID_sorted = np.zeros_like(cluster_ID)
-        print('clusters', clusters)
-        print('n_clusters', n_clusters)
+        print('clusters: ', clusters)
+        print('n_clusters: ', n_clusters)
         for i in range(n_clusters):
             cluster_size[i] =  (cluster_ID == clusters[i]).sum()
-        print('cluster_size', cluster_size)
+        print('cluster_size: ', cluster_size)
         clusters_sorted_idx = np.argsort(cluster_size)[::-1]
         cluster_size_sorted = np.sort(cluster_size)[::-1]
         for i in range(n_clusters):
@@ -1228,8 +1253,8 @@ Keyboard shortcuts:
         fileName, _ = QFileDialog.getSaveFileName(self, "Save detected data", self.detect_fileName.split('.')[-2]+ self.output_suffix + '.mat',
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
 
-        print('self.detect_fileName',self.detect_fileName)
-        print('fileName',fileName)
+        print('self.detect_fileName: ',self.detect_fileName)
+        print('fileName: ',fileName)
         self.save_detectedCS(fileName)
         # if fileName:
         #     sp.savemat(fileName, {'CS_onset': self.CS_onset,
@@ -1677,32 +1702,54 @@ Keyboard shortcuts:
                                                   "All Files (*);;MATLAB Files (*.mat)", options=options)
         if fileName:
             self.upload_output(fileName)
+            
+    def upload_output(self, fileName):
+        output = sp.loadmat(fileName)
+        if not 'CS_onset' in output.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + 'CS_onset' +"] not found.")
+            errorbox.exec_()
+        elif not 'CS_offset' in output.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + 'CS_offset' +"] not found.")
+            errorbox.exec_()
+        elif not 'cluster_ID' in output.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + 'Cluster_ID' +"] not found.")
+            errorbox.exec_()
+        elif not 'embedding' in output.keys():
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Variable [" + 'embedding' +"] not found.")
+            errorbox.exec_()
+        else:    
+            cs_onset = output['CS_onset'].squeeze()
+            cs_offset = output['CS_offset'].squeeze()
+            cluster_ID = output['cluster_ID'].squeeze()
+            embedding = output['embedding'].squeeze()
+            print('cs_onset shape, cluster_ID shape, embedding.shape: ',cs_onset.shape, cluster_ID.shape, embedding.shape)
+            
+            self.CS_onset = cs_onset
+            self.CS_offset = cs_offset
+            self.embedding = embedding
+            
+            self.sort_clusters(cluster_ID)
+            
             ext = fileName.split('.')[-1]
             self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
             self.load_output_label.setText(self.outputName)
-        
-    def upload_output(self, fileName):
-        output = sp.loadmat(fileName)
-        cs_onset = output['CS_onset'].squeeze()
-        cs_offset = output['CS_offset'].squeeze()
-        cluster_ID = output['cluster_ID'].squeeze()
-        embedding = output['embedding'].squeeze()
-        print(cs_onset.shape, cluster_ID.shape, embedding.shape)
-        
-        self.CS_onset = cs_onset
-        self.CS_offset = cs_offset
-        self.embedding = embedding
-        
-        self.sort_clusters(cluster_ID)
-        
+        4
     def generate_cluster_list(self):
         self.is_cluster_selected = []
         self.combobox = []
         self.checkbutton = []
         index = self.checkbox_layout.count()
         while(index > 0):
-            print('self.checkbox_layout',self.checkbox_layout)
-            print('self.checkbox_layout.itemAt(index-1)',index,self.checkbox_layout.itemAt(index-1))
+            # print('self.checkbox_layout',self.checkbox_layout)
+            # print('self.checkbox_layout.itemAt(index-1)',index,self.checkbox_layout.itemAt(index-1))
             myWidget = self.checkbox_layout.itemAt(index-1).widget()
             myWidget.setParent(None)
             index -=1
@@ -1748,13 +1795,13 @@ Keyboard shortcuts:
         else:
             self.checkbox_layout.addWidget(QLabel("No cluster"))
             self.checkbox_widget.setLayout(self.checkbox_layout)
-        print('self.checkbox_layout',self.checkbox_layout.count())
-        print('self.checkbox_widget',self.checkbox_widget.children())
+        # print('self.checkbox_layout',self.checkbox_layout.count())
+        # print('self.checkbox_widget',self.checkbox_widget.children())
         # self.checkbox_widget.setStyleSheet('border: 1px solid black;')
 
     def checkbutton_clicked(self):
         self.set_cluster_selected()
-        print(self.is_cluster_selected)
+        print('is_cluster_selected: ', self.is_cluster_selected)
 
     def set_cluster_selected(self):
         n = len(self.checkbutton)
@@ -1797,8 +1844,8 @@ Keyboard shortcuts:
             idx = self.cluster_ID == i + 1
             self.cluster_ID_save[idx] = self.combobox[i].currentIndex()+1
             self.clusters_selected[i] = self.combobox[i].currentIndex()+1
-        print('cluster_ID', self.cluster_ID)
-        print('cluster_ID_save', self.cluster_ID_save)
+        print('cluster_ID: ', self.cluster_ID)
+        print('cluster_ID_save: ', self.cluster_ID_save)
         
         self.plot_detected_data()
 
@@ -1813,15 +1860,11 @@ Keyboard shortcuts:
         self.canvas2.draw()
 
         cluster_ID = self.cluster_ID_save
-        # cs_offset = self.CS_offset
-        # cs_onset = self.CS_onset
         embedding = self.embedding
-        # print('cluster_ID',cluster_ID)
 
         for i in range(len(self.is_cluster_selected)):
             if not self.is_cluster_selected[i]:
                 cluster_ID[self.cluster_ID == i+1] = 0
-        # n_clusters = np.unique(cluster_ID[cluster_ID!=0]).shape[0]
         
         for i in np.unique(cluster_ID[cluster_ID!=0]):
             idx = cluster_ID == i
@@ -1871,7 +1914,7 @@ Keyboard shortcuts:
             cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
             ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
             offset = 0
-            print('ss_sort', self.ss_sort)
+            print('ss_sort: ', self.ss_sort)
             if self.ss_sort == 'cluster':
                 for i in np.unique(cluster_ID[cluster_ID!=0]):
                     [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==1)   
