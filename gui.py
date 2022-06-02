@@ -116,6 +116,7 @@ class Content(QWidget):
         self.CS_onset = []
         self.CS_offset = []
         self.cluster_ID = []
+        self.cluster_ID_save = []
         self.embedding = []
         self.n_clusters = []
         self.ss_train = []
@@ -751,12 +752,20 @@ class Content(QWidget):
         self.canvas.draw_idle()
         
     def set_max_xlim(self):
-        l = len(self.upload_HIGH)-1
-        self.canvas.high_axes.set_xlim(self.t[0], self.t[l])
-        self.canvas.lfp_axes.set_xlim(self.t[0], self.t[l])
-        self.lims = np.array([0, len(self.upload_LFP)/self.sampling_rate])
-        self.setupSlider(0, 0, 0)
-        self.canvas.draw_idle()
+        if len(self.upload_HIGH)>0:
+            l = len(self.upload_HIGH)-1
+            self.canvas.high_axes.set_xlim(self.t[0], self.t[l])
+            self.canvas.lfp_axes.set_xlim(self.t[0], self.t[l])
+            self.lims = np.array([0, len(self.upload_LFP)/self.sampling_rate])
+            self.setupSlider(0, 0, 0)
+            self.canvas.draw_idle()
+        else:
+            print('no plot data')
+            self.canvas.high_axes.set_xlim(0, 1)
+            self.canvas.lfp_axes.set_xlim(0, 1)
+            self.lims = np.array([0, 1])
+            self.setupSlider(0, 0, 0)
+            self.canvas.draw_idle()
         
     def set_zoom_xlim(self, width):
         maximum = np.floor(len(self.upload_LFP) / self.sampling_rate * self.step / width).astype(int)
@@ -790,11 +799,12 @@ class Content(QWidget):
         self.canvas.draw_idle()
         
     def go_to_prev_CS(self):
-        width = 0.05
-        center = np.mean(self.canvas.high_axes.get_xlim())
-        idx_center = np.absolute(self.t-center).argmin().astype(int)
-        # print('center',center, idx_center, self.cs_spans[0,:])
         if self.cs_spans.T.shape[0]>0:
+            width = 0.05
+            center = np.mean(self.canvas.high_axes.get_xlim())
+            idx_center = np.absolute(self.t-center).argmin().astype(int)
+            # print('center',center, idx_center, self.cs_spans[0,:])
+        
             idx0 = np.where(self.cs_spans[0,:]<idx_center)[0]
             if len(idx0)>0:
                 idx = idx0.max()
@@ -803,13 +813,16 @@ class Content(QWidget):
                 self.canvas.lfp_axes.set_xlim([self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2])
                 self.canvas.draw_idle()
                 # self.set_zoom_xlim(width)
+        else:
+            print('No more previouse CSs')
                 
     def go_to_next_CS(self):
-        width = 0.05
-        center = np.mean(self.canvas.high_axes.get_xlim())
-        idx_center = np.absolute(self.t-center).argmin().astype(int)
-        # print('center',center, idx_center, self.cs_spans[0,:])
         if self.cs_spans.T.shape[0]>0:
+            width = 0.05
+            center = np.mean(self.canvas.high_axes.get_xlim())
+            idx_center = np.absolute(self.t-center).argmin().astype(int)
+            # print('center',center, idx_center, self.cs_spans[0,:])
+       
             idx0 = np.where(self.cs_spans[0,:]>idx_center)[0]
             if len(idx0)>0:
                 idx = idx0.min()
@@ -818,6 +831,8 @@ class Content(QWidget):
                 self.canvas.lfp_axes.set_xlim([self.t[self.cs_spans[0,idx]]-width/2, self.t[self.cs_spans[0,idx]]+width/2])
                 self.canvas.draw_idle()
                 # self.set_zoom_xlim(width)
+        else:
+            print('No more next CSs')
                 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_R:
@@ -1141,13 +1156,17 @@ Keyboard shortcuts:
             
     def select_detect_folder(self):
         self.detect_folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        print('selected detect folder,', self.detect_folder)
+        if len(self.detect_folder) == 0:
+            self.detect_folder = "No folder selected"
+        print('selected detect folder: ', self.detect_folder)
         self.select_detect_folder_label.setText(self.detect_folder)
         return self.detect_folder
     
     def select_output_folder(self):
         self.output_folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        print('selected save folder,', self.output_folder)
+        if len(self.output_folder) == 0:
+            self.output_folder = "No folder selected"
+        print('selected save folder:', self.output_folder)
         self.select_output_folder_label.setText(self.output_folder)
         return self.output_folder
 
@@ -1173,37 +1192,35 @@ Keyboard shortcuts:
             self.detect_upload_weights_label2.setText(self.weights.split('/')[-1])
 
     def detect_CS_starter(self):
-        self.runningbox = QMessageBox()
-        self.runningbox.show()
-        self.runningbox.setWindowTitle("Running")
-        self.runningbox.setText("No CSs detected")
-        # runningbox.exec()
-        
-        # output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
-        # self.runningbox.done(1)
-        
-        # cs_onset = output['cs_onset']
-        # cs_offset = output['cs_offset']
-        # cluster_ID = output['cluster_ID']
-        # embedding = output['embedding']
-        # # print(cs_onset.shape, cluster_ID.shape, embedding.shape)
-        
-        # self.sort_clusters(cluster_ID)
-        
-        # self.CS_onset = cs_onset
-        # self.CS_offset = cs_offset
-        # self.embedding = embedding
-        
-        self.process_detect_CS()
-        
-        self.runningbox.done(1)
-        print("\a")
-
-        cs_infobox = QMessageBox()
-        cs_infobox.setText('{} CSs found'.format(len(self.CS_onset)))
-        cs_infobox.exec()
-        
-        self.save_detectFileDialog()
+        if self.detect_fileName == "No file":
+            print('Detect file not selected.')
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Detect file not selected.")
+            errorbox.exec_()
+        elif self.weights == []:
+            print('Weight file not selected.')
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Weight file not selected.")
+            errorbox.exec_()
+        else:            
+            self.runningbox = QMessageBox()
+            self.runningbox.show()
+            self.runningbox.setWindowTitle("Running")
+            self.runningbox.setText("No CSs detected")
+            # runningbox.exec()
+    
+            self.process_detect_CS()
+            
+            self.runningbox.done(1)
+            print("\a")
+    
+            cs_infobox = QMessageBox()
+            cs_infobox.setText('{} CSs found'.format(len(self.CS_onset)))
+            cs_infobox.exec()
+            
+            self.save_detectFileDialog()
         
     def process_detect_CS(self):
         output = detect_CS(self.weights, self.detect_LFP, self.detect_HIGH)
@@ -1290,27 +1307,52 @@ Keyboard shortcuts:
                 self.process_serial_CS_detection(matfiles, correct_file_list)
             else:
                 print(click.text())
-        _filenames = next(os.walk(self.detect_folder), (None, None, []))[2]
-        # print('filenames', _filenames)
-        matfiles = [filename for filename in _filenames if filename[-4:] == '.mat']
-        # print(matfiles)
-        correct_file_list = self.make_correct_file_list(matfiles)
-        idx = np.where(np.invert(correct_file_list))[0]
-        failed_file_list = [matfiles[i] for i in idx]
-        text1 = '{}/{} files will be inspected. \n'.format(len(matfiles)-len(idx), len(matfiles))
-        text2 = 'Following {} files will not be inspected. Check the format again:\n\n'.format(len(idx))
-        text3 = '\n'.join(failed_file_list)
         
-        message_box = QMessageBox()
-        message_box.setText(text1+text2+text3)
-        message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        message_box.buttonClicked.connect(msgButtonClick)
-        buttonY = message_box.button(QMessageBox.Ok)
-        buttonY.setText('Proceed')
-        buttonN = message_box.button(QMessageBox.Cancel)
-        buttonN.setText('Cancel')
-        message_box.exec()
+        if self.detect_folder =="No folder selected" or self.detect_folder == "":
+            print('Training folder not selected.')
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Training folder not selected.")
+            errorbox.exec_()
+            print('detect_folder',self.detect_folder)
+        elif self.output_folder =="No folder selected" or self.output_folder == "":
+            print('Output folder not selected.')
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Output folder not selected.")
+            errorbox.exec_()
+        elif self.weights == []:
+            print('Weights not selected.')
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Weights not selected.")
+            errorbox.exec_()
+        else:
         
+            _filenames = next(os.walk(self.detect_folder), (None, None, []))[2]
+            # print('filenames', _filenames)
+            matfiles = [filename for filename in _filenames if filename[-4:] == '.mat']
+            # print(matfiles)
+            correct_file_list = self.make_correct_file_list(matfiles)
+            idx = np.where(np.invert(correct_file_list))[0]
+            failed_file_list = [matfiles[i] for i in idx]
+            text1 = '{}/{} files will be inspected. \n'.format(len(matfiles)-len(idx), len(matfiles))
+            text2 = 'Following {} files did not match the format and will not be inspected. Check the format again:\n\n'.format(len(idx))
+            if len(idx)>0:
+                text3 = '\n'.join(failed_file_list)
+            else:
+                text3 = 'all files will be inspected.'
+            
+            message_box = QMessageBox()
+            message_box.setText(text1+text2+text3)
+            message_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            message_box.buttonClicked.connect(msgButtonClick)
+            buttonY = message_box.button(QMessageBox.Ok)
+            buttonY.setText('Proceed')
+            buttonN = message_box.button(QMessageBox.Cancel)
+            buttonN.setText('Cancel')
+            message_box.exec()
+            
         return
     
     
@@ -1858,102 +1900,122 @@ Keyboard shortcuts:
         self.canvas2.SS.cla()
         self.canvas2.ax2.cla()
         self.canvas2.draw()
-
-        cluster_ID = self.cluster_ID_save
-        embedding = self.embedding
-
-        for i in range(len(self.is_cluster_selected)):
-            if not self.is_cluster_selected[i]:
-                cluster_ID[self.cluster_ID == i+1] = 0
         
-        for i in np.unique(cluster_ID[cluster_ID!=0]):
-            idx = cluster_ID == i
-            self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[(i-1)%len(self.colors)], ms=self.ms1)
-        self.canvas2.CS_clusters.set_xlabel('Dimension 1')
-        self.canvas2.CS_clusters.set_ylabel('Dimension 2')
-        self.canvas2.CS_clusters.set_title('Feature space', loc='left')
-
-        t = np.arange(-self.t1, self.t2, 1000/(self.sampling_rate+1))
-        p = 0.6
-        wht = np.array([1., 1., 1., 1.])
-        
-        # plot CS
-        cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
-        for i in np.unique(cluster_ID[cluster_ID!=0]):
-            idx = cluster_ID == i
-            color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
-            self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
-        for i in np.unique(cluster_ID[cluster_ID!=0]):
-            idx = cluster_ID == i
-            self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
-        self.canvas2.CS.set_xlim((-self.t1, self.t2))
-        self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
-        self.canvas2.CS.set_title('CS', loc='left')
-        self.canvas2.CS.get_xaxis().set_ticks([])
-        
-        # plot LFP
-        lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
-        for i in np.unique(cluster_ID[cluster_ID!=0]):
-            idx = cluster_ID == i
-            color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
-            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
-        for i in np.unique(cluster_ID[cluster_ID!=0]):
-            idx = cluster_ID == i
-            self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
-        self.canvas2.LFP.set_xlim((-self.t1, self.t2))
-        self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
-        self.canvas2.LFP.set_title('LFP', loc='left')
+        if len(self.detect_HIGH) == 0:
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Action potential not found.")
+            errorbox.exec_()
+        elif len(self.detect_LFP) == 0:
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("LFP not found.")
+            errorbox.exec_()
+        elif len(self.cluster_ID_save)==0:
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Error")
+            errorbox.setText("Detected CS not found.")
+            errorbox.exec_()
+        else:
+            cluster_ID = self.cluster_ID_save
+            embedding = self.embedding
+    
+            for i in range(len(self.is_cluster_selected)):
+                if not self.is_cluster_selected[i]:
+                    cluster_ID[self.cluster_ID == i+1] = 0
             
-        # plot SS
-        
-        if self.SS_varname in self.mat.keys():
-
-            t_ss = np.arange(-self.t1_ss, self.t2_ss, 1000/(self.sampling_rate_SS+1))
-            self.ss_train = get_field_mat(self.mat,[self.SS_varname])
-            # clusters = np.unique(cluster_ID[cluster_ID!=0])
-            cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
-            ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
-            offset = 0
-            print('ss_sort: ', self.ss_sort)
-            if self.ss_sort == 'cluster':
-                for i in np.unique(cluster_ID[cluster_ID!=0]):
-                    [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==1)   
-                    color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
-                    self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
-                    offset = offset + (cluster_ID==i).sum()
-            elif self.ss_sort == 'time':
-                [iy, ix] = np.where(ss_aligned[cluster_ID!=0, :]==1) 
-                for i in np.unique(cluster_ID[cluster_ID!=0]):
-                    idx = np.in1d(iy, np.where(cluster_ID[cluster_ID!=0]==i)[0])
-                    color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
-                    self.canvas2.SS.plot(t_ss[ix[idx]], iy[idx], '.', c=color*p+wht*(1-p), ms=self.ms2)
-            self.canvas2.SS.set_ylim((0, len(cluster_ID[cluster_ID!=0])))
-            
-            ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
             for i in np.unique(cluster_ID[cluster_ID!=0]):
-                self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[(i-1)%len(self.colors)], lw=2)
+                idx = cluster_ID == i
+                self.canvas2.CS_clusters.plot(embedding[idx,0], embedding[idx,1], '.',  c=self.colors[(i-1)%len(self.colors)], ms=self.ms1)
+            self.canvas2.CS_clusters.set_xlabel('Dimension 1')
+            self.canvas2.CS_clusters.set_ylabel('Dimension 2')
+            self.canvas2.CS_clusters.set_title('Feature space', loc='left')
+    
+            t = np.arange(-self.t1, self.t2, 1000/(self.sampling_rate+1))
+            p = 0.6
+            wht = np.array([1., 1., 1., 1.])
             
-            self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
-            self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
-            self.canvas2.SS.set_ylabel('CS')
-            self.canvas2.SS.set_title('SS', loc='left')
-            self.canvas2.SS.set_xlim([-self.t1_ss, self.t2_ss])
-
-        self.canvas2.draw()
+            # plot CS
+            cs_aligned = self.align_spikes(self.detect_HIGH, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+                idx = cluster_ID == i
+                color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                self.canvas2.CS.plot(t, cs_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+                idx = cluster_ID == i
+                self.canvas2.CS.plot(t, cs_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
+            self.canvas2.CS.set_xlim((-self.t1, self.t2))
+            self.canvas2.CS.set_xlabel('Time from CS onset [ms]')
+            self.canvas2.CS.set_title('CS', loc='left')
+            self.canvas2.CS.get_xaxis().set_ticks([])
+            
+            # plot LFP
+            lfp_aligned = self.align_spikes(self.detect_LFP, self.CS_onset, l1=self.t1*int(self.sampling_rate/1000), l2=self.t2* int(self.sampling_rate/1000))
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+                idx = cluster_ID == i
+                color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                self.canvas2.LFP.plot(t, lfp_aligned[idx, :].T, c=color*p+wht*(1-p), lw=0.4)
+            for i in np.unique(cluster_ID[cluster_ID!=0]):
+                idx = cluster_ID == i
+                self.canvas2.LFP.plot(t, lfp_aligned[idx, :].mean(0), c=self.colors[(i-1)%len(self.colors)], lw=1.5)
+            self.canvas2.LFP.set_xlim((-self.t1, self.t2))
+            self.canvas2.LFP.set_xlabel('Time from CS onset [ms]')
+            self.canvas2.LFP.set_title('LFP', loc='left')
+                
+            # plot SS
+            
+            if self.SS_varname in self.mat.keys():
+    
+                t_ss = np.arange(-self.t1_ss, self.t2_ss, 1000/(self.sampling_rate_SS+1))
+                self.ss_train = get_field_mat(self.mat,[self.SS_varname])
+                # clusters = np.unique(cluster_ID[cluster_ID!=0])
+                cs_onset_downsample = (self.CS_onset/self.sampling_rate*1000).astype(int)
+                ss_aligned = self.align_spikes(self.ss_train, cs_onset_downsample, self.t1_ss, self.t2_ss)
+                offset = 0
+                print('ss_sort: ', self.ss_sort)
+                if self.ss_sort == 'cluster':
+                    for i in np.unique(cluster_ID[cluster_ID!=0]):
+                        [iy, ix] = np.where(ss_aligned[cluster_ID==i, :]==1)   
+                        color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                        self.canvas2.SS.plot(t_ss[ix], iy+offset, '.', c=color*p+wht*(1-p), ms=self.ms2)
+                        offset = offset + (cluster_ID==i).sum()
+                elif self.ss_sort == 'time':
+                    [iy, ix] = np.where(ss_aligned[cluster_ID!=0, :]==1) 
+                    for i in np.unique(cluster_ID[cluster_ID!=0]):
+                        idx = np.in1d(iy, np.where(cluster_ID[cluster_ID!=0]==i)[0])
+                        color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
+                        self.canvas2.SS.plot(t_ss[ix[idx]], iy[idx], '.', c=color*p+wht*(1-p), ms=self.ms2)
+                self.canvas2.SS.set_ylim((0, len(cluster_ID[cluster_ID!=0])))
+                
+                ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
+                for i in np.unique(cluster_ID[cluster_ID!=0]):
+                    self.canvas2.ax2.plot(t_ss, np.nanmean(ss_conv[cluster_ID==i, :], 0), c=self.colors[(i-1)%len(self.colors)], lw=2)
+                
+                self.canvas2.ax2.set_ylabel('SS firing rate [spikes/s]')
+                self.canvas2.SS.set_xlabel('Time from CS onset [ms]')
+                self.canvas2.SS.set_ylabel('CS')
+                self.canvas2.SS.set_title('SS', loc='left')
+                self.canvas2.SS.set_xlim([-self.t1_ss, self.t2_ss])
+    
+            self.canvas2.draw()
 
     def save_selected_cluster(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.detect_fileName.split('.')[-2]+'_cs_clusters.mat',
-                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
-
-        if fileName:
-            self.get_selected_clusters()
-            sp.savemat(fileName, {'CS_onset': self.save_CS_onset,
-                                  'CS_offset': self.save_CS_offset,
-                                  'cluster_ID': self.save_cluster_ID,
-                                  'embedding': self.save_embedding}, do_compression=True)
-            print(fileName + ' saved')
+        print(self.detect_fileName)
+        if self.detect_fileName == 'No file' or len(self.detect_fileName)==0:
+            print('error:',self.detect_fileName, 'to save')
+        else:
+            fileName, _ = QFileDialog.getSaveFileName(self, "Save selected cluster data", self.detect_fileName.split('.')[-2]+'_cs_clusters.mat',
+                                                      "All Files (*);;MATLAB Files (*.mat)", options=options)
+    
+            if fileName:
+                self.get_selected_clusters()
+                sp.savemat(fileName, {'CS_onset': self.save_CS_onset,
+                                      'CS_offset': self.save_CS_offset,
+                                      'cluster_ID': self.save_cluster_ID,
+                                      'embedding': self.save_embedding}, do_compression=True)
+                print(fileName + ' saved')
 
     def get_selected_clusters(self):
         selected_clusters = self.clusters[np.where(np.array(self.is_cluster_selected)==True)]
