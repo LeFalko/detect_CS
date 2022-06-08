@@ -1,14 +1,16 @@
-# Readme CS Detection GUI
-
-# Detecting complex spikes in extracellular recording  
-A complete graphical user interface for detecting cerebellar complex spikes  
+# A complete graphical user interface for detecting cerebellar complex spikes  
 
 You can find our preprint article on bioRxiv: https://www.biorxiv.org/content/biorxiv/early/2019/04/05/600536.full.pdf
 
-### <a name="Tutorial">How to use the GUI</a> 
+You can download our GUI here
+[for Windows]() and
+[for Mac]().
 
+## How to use the GUI
+### [STEP 1 Labeling your data](#labeling)
+### [STEP 2 ] 
 
-### <a name="First Tab">Labeling your data:</a>
+### <a name="labeling">Labeling your data:</a>
 This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
 
@@ -35,7 +37,7 @@ When you are heppy with the selected spans, simply press the "save" button in th
 
 The last step is to press the "Train algorithm" button and move to the training part in your browser.
 
-### <a name="Training the algorithm"> Google Colaboratory:</a> 
+### <a name="training"> Training the network:</a> 
 
 **STEP 1: Connecting your drive**  
 You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
