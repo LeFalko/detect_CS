@@ -16,7 +16,7 @@ You can download our GUI here
 
 &nbsp;
 
-### <a name="labeling">STEP1: Labeling your data:</a>
+### <a name="labeling">STEP1: Labeling your data</a>
 This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
 
@@ -43,7 +43,7 @@ When you are heppy with the selected spans, simply press the "save" button in th
 
 The last step is to press the "Train algorithm" button and move to the training part in your browser.
 
-### <a name="training"> Training the network:</a> 
+### <a name="training"> Training the network</a> 
 
 **1: Connecting your drive**  
 You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
@@ -62,7 +62,7 @@ The fifth cells trains your network and needs no interactions other that running
 After your network is done with training, you can simply download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
 
 
-### <a name="detecting">Detecting complex spikes:</a>
+### <a name="detecting">Detecting complex spikes</a>
 
 **1: Uploading files**  
 After opening the GUI again, navigate to the "Detect CS" tab at the top. 
@@ -77,7 +77,7 @@ By clicking the "Detect CS" button and pressing "ok" in the dialog the detection
 You can move to the post-processing tab after running the algortihm to see your result and save clusters.
 
 
-### <a name="post-processing">Post-processing:</a>
+### <a name="post-processing">Post-processing</a>
 
 **1: Uploading files**  
 Again, you first need to upload some files. This time, the loaded files have to be your recording from the last tab and the corresponding output file, so you should upload your file "filename.mat" as the upper file and your file "filename_output.mat" as the lower file.
@@ -93,5 +93,5 @@ This is an example of how it should look after plotting your files:
 In the select clusters box the individual clusters can be selected to plot individually and outliers or noisy data can be deselected to remove from the results. The "update" button replots only the selected clusters.
 Lastly, the "Save selected cluster data" lets you save the selected clusters as a matlab file. Additional information to any button can be found in tooltips by hovering the information button in every box.
 
-### <a name="trouble-shooging">Trouble shooting data:</a>
+### <a name="trouble-shooting">Trouble shooting</a>
 In case the app crashes, you can run from a command prompt (on Windows) and see what kind of error is prompted.
