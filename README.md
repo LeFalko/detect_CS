@@ -1,106 +1,86 @@
+# Readme CS Detection GUI
+
 # Detecting complex spikes in extracellular recording  
-Deep learning-based detection of complex spikes  
+A complete graphical user interface for detecting cerebellar complex spikes  
 
 You can find our preprint article on bioRxiv: https://www.biorxiv.org/content/biorxiv/early/2019/04/05/600536.full.pdf
 
-### <a name="Tutorial">Tutorial:</a>
-A tutorial explaining the workflow and details of the algorithm can be found here: https://colab.research.google.com/github/jobellet/detect_CS/blob/master/Tutorial_detect_cs.ipynb
+### <a name="Tutorial">How to use the GUI</a> 
 
-The tutorial runs in colaboratory:
-https://research.google.com/colaboratory/faq.html  
-This enables simple installation because it works online.
-Also, we can use the GPUs that google provides free of cost.
 
-### <a name="Implementations">Implementations:</a>
-The software is written in python. You can use the software online using [Colaboratory](#Colaboratory) and upload your data in your google drive or [use it on your local machine](#docker), thanks to a docker container. Both solutions are platform independent and don't require any installation of python.
+### <a name="First Tab">Labeling your data:</a>
+This is how the GUI should look when opening it for the first time:
+![](./img/Screenshot1.png)
 
-### <a name="Colaboratory">Colaboratory:</a> the platform independent and online solution
+**STEP 1: Choose parameters**
+The first thing to do when opening the GUI is setting your Parameters. To do that, you have to go the "Set parameters" Button in the top left corner and choose your recorded sampling rate, as well as entering the action potential and local field potential variable names of your recordings.
 
-**STEP 1: Installing the software (you need to do this step only once)**  
-To install the software, click on [this link](https://colab.research.google.com/github/jobellet/detect_CS/blob/master/install_detect_cs.ipynb)
+**STEP 2: Upload files**
+After that, you click on the "Add PC for manual labeling" button and navigate to the folder with your recordings. Select a filee and press "open" to load it. In this window you can also drag your recordings folder to the left area to access it more quickly at a later time. 
+The file that is added first should be plotted instantly after loading, so you can label instantly or load more files and select on which to start. All files will be added to the "loadad files" list on the left, where you can select single files to plot or remove. 
+After uploading and plotting, the GUI should look similar to this:
+![](./img/Screenshot2.png)
 
-This will create a folder named ‘uneye’ in your google drive account where all the scripts and network weights will be stored
+**STEP 3: Label a recording**
+To label your first recording, you can choose a observed span by clicking on one of the top buttons or using the keyboard shortcuts "Q","W","E" and using "R" and "T" to zoom. Move around the file and find CS by scrolling the bottom bar. 
+Dragging across one of the plots will create a selected span on which the algorithm will train, so it is important to mark the beginning and the end of the complex spike as accurately as possible- You can deselect a CS by simply left-clicking on the selected span.
+If you want to find an already selected CS you can do so by buttons directly above the plot or pressing "C" to move to the previous, or pressing "V" to move to the following CS (regarding time in the recording, not time of selection in the GUI).
+This is an example of a Complex Spike recording:
+![](./img/Screenshot3.png)
+
+After labeling the first recording, select another file in your list and press "plot" to plot the new recording in the GUI and proceed with labling. 
+
+**STEP 4: Save Training data**
+When you are heppy with the selected spans, simply press the "save" button in the bottom left corner and choose a filename for your training data. the filetype should stay at .mat.
+
+The last step is to press the "Train algorithm" button and move to the training part in your browser.
+
+### <a name="Training the algorithm"> Google Colaboratory:</a> 
+
+**STEP 1: Connecting your drive**  
+You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
 
 
 **STEP 2: Train your network**    
-To train a network, click on [this link](https://colab.research.google.com/github/jobellet/detect_CS/blob/master/train_cs_detector.ipynb)
+The second cell installs the necessary tools on your drive, so just run the cell and wait until all the tools are installed.
 
-This will train a network whose weights can be used later to detect complex spikes. Please look in the [tutorial](https://colab.research.google.com/github/jobellet/detect_CS/blob/master/Tutorial_detect_cs.ipynb) for an example of how to preprocess the data before training.
+After that, you need to run the third cell and upload the file with the training data you saved earlier, it can be found in the "Data" folder by default.
 
+The fourth cell cell doesnt have to be changed, but it needs to run for the training to work. Changes to the number of iterations the algortihm runs, the kernel size or the max pooling size can be made here.
 
-**STEP 3: Detect complex spikes**
-To detect complex spikes in your data, click on [this link](https://colab.research.google.com/github/jobellet/detect_CS/blob/master/predict_cs.ipynb)
+The fifth cells trains your network and needs no interactions other that running it.
 
-
-
-### <a name="docker">Docker:</a> the platform independent and local solution
-
-Disclaimer: this solution might not work with computers with limited computing capacities.
-
-**1) Install docker:**
-
-for [Windows](https://docs.docker.com/docker-for-windows/install/#download-docker-for-windows), [Mac](https://store.docker.com/editions/community/docker-ce-desktop-mac) or [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository)
-
-You will need to create an account.
-For windows user: Once the docker is installed on your machine, you will see the app icon in your task bar. Right click on the icon and select "Switch to Linux containers". You are now ready to type in the terminal.   
-
-**2) Download the docker image that contains the detect_cs software:**
-
-Run the docker app and then type the following command in your terminal::
-
-    docker pull joachimbellet/detect_cs
-
-This will download an image containing python and all the dependencies that our algorithm requires (it may take some time).
+**STEP 3: Downloading weights**
+After your network is done with training, you can simply download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
 
 
-**3) Launch the docker container:**
+### <a name="Second Tab">Detecting complex spikes:</a>
 
-Docker launches a virtual machine that can only access your local files when you instruct it.
-
-Type the following command in your terminal:
-
-    docker run -it -p 6888:8888 -v YourPath:/home/jovyan/work joachimbellet/detect_cs
-
-In YourPath write the path on your machine that you want the container to access to. On Unix machine, you might need to write '/' before your path. This folder contains the data you want to analyse.
-
-!! Important: DO NOT copy the output of the command into your browser, but do the following:
-
-Open your web browser. Enter "**localhost:6888**" as URL. Then you will be asked for a token.
-This token appeared in your terinal when you entered the command above. It looks something like this: http://6688:8888/?token=775c758f58cdc82bf6ddf51a112228f4dd4229c5b3847bb1 . Copy the token (in this case 775c758f58cdc82bf6ddf51a112228f4dd4229c5b3847bb1)
-Log in with the token that you saved/copied in the previous step.
-Now you should see the content of your folder in the web browser. The folder 'work' will contain the path "YourPath" that you entered in the previous step.
+**STEP 1: Uploading files**  
+After opening the GUI again, navigate to the "Detect CS" tab at the top. 
+Choose if you want to detect on one or multiple files. Press the upper two buttons to upload a recording on which the algorithm will detect and to upload the weights you just saved from the Colab sheet in your browser. If you chose to detect on multiple files, you will need to specify an output folder as well.
+This is the detection tab of the GUI when re-entering:
+![](./img/Screenshot4.png)
 
 
-**4)  Start using detect_cs**
+**STEP 2: Detecting CS**
+By clicking the "Detect CS" button and pressing "ok" in the dialog the detection will start. The results of the algorithm will be saved in a file with the selected file name in the beginning and "output" in the end, so the name of the resulting file ist "yourfilename_output.mat.
 
-**First use**  
-Run the notebook "Initialize.ipynb". This will create 4 folders in your computer at the path "YourPath":
-- "TrainYourNetwork" is where you will drag the files for training your own network
-- "Weights" is where the file containing your network weights will be stored after training (you can also drop here the weights of a pretrained network)
-- "LabelYourData" is where you will drag the files for which you want CSs to be detected
-- "Output" is where the CSs labels will be stored
+You can move to the post-processing tab after running the algortihm to see your result and save clusters.
 
-**Training your network**  
 
-In the folder "TrainYourNetwork", you will drop files containing annotated signals. We recommend to train your network with many different recordings. Thus, in the folder "TrainYourNetwork", it is better to drop many files (>30) containing about 5 examples of complex spikes rather than a few fully-annotated recordings. Each file will be a .mat file and should contain at least 3 variables:
- - Either the wide-band or LFP signal
- - A high-passed (>600 Hz) filter version of the signal
- - A logical array of the same dimension as the signal containing ones for time bins where CS occur and zeros elsewhere.
+### <a name="Third Tab">Post-processing:</a>
 
-You can choose the name of your variables. If you have difficulties, see the notebook "Tutorial.ipynb" for an example of how such a file is organized.
+**STEP 1: Uploading files**  
+Again, you first need to upload some files. This time, the loaded files have to be your recording from the last tab and the corresponding output file, so you should upload your file "filename.mat" as the upper file and your file "filename_output.mat" as the lower file.
+The names are shown after selection, so you can check and reupload anytime.
 
-Then run the notebook "train_cs_detector.ipynb" and follow the instructions.   
+**STEP 2: Plotting data**
+press the "Setting for plot" button in the big plotting window to change parameters (like simple spike variable name or sampling rate) to your personally used values. These can be changed and adjusted after plotting. 
+Press "Plot data" to see the CS clusters the algorithm detected on your file.
+This is an example of how it should look after plotting your files:
+![](./img/Screenshot5.png)
 
-This step will generate a trained network whose weights will be saved in the folder "Weights".
-
-**Detect your complex spikes**
-
-In the folder "LabelYourData" drop your .mat files containing:
-- Either the wide-band or LFP signal
-- A high-passed (>600 Hz) filter version of the signal
-You can choose the name of your variables.
-Then run the notebook "train_cs_detector.ipynb" and follow the instructions.   
-
-Then run the notebook "label_your_data.ipynb" and follow the instructions.
-
-The folder Output will then contain the CSs labels corresponding to each file in "LabelYourData"
+**STEP 3: Selecting clusters and saving**
+In the select clusters box the individual clusters can be selected to plot individually and outliers or noisy data can be deselected to remove from the results. The "update" button replots only the selected clusters.
+Lastly, the "Save selected cluster data" lets you save the selected clusters as a matlab file. Additional information to any button can be found in tooltips by hovering the information button in every box.
