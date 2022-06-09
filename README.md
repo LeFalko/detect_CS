@@ -21,7 +21,7 @@ This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
 
 **1: Choose parameters**
-The first thing to do when opening the GUI is setting your Parameters. To do that, you have to go the "Set parameters" Button in the top left corner and choose your recorded sampling rate, as well as entering the action potential and local field potential variable names of your recordings.
+The first thing to do when opening the GUI is setting your parameters. To do that, you have to go the "Set parameters" button in the top left corner and choose your recorded sampling rate, as well as entering the action potential and local field potential variable names of your recordings.
 
 **2: Upload files**
 After that, you click on the "Add PC for manual labeling" button and navigate to the folder with your recordings. Select a filee and press "open" to load it. In this window you can also drag your recordings folder to the left area to access it more quickly at a later time. 
