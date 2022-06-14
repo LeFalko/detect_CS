@@ -4,7 +4,7 @@
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QSizePolicy, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
                              QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
                              QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar, QStyle)
-from PyQt5.QtGui import QIcon, QDesktopServices, QPixmap, QColor
+from PyQt5.QtGui import QIcon, QDesktopServices, QPixmap, QColor, QImage
 from PyQt5.QtCore import QUrl, QSize, Qt, QRect
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -22,6 +22,22 @@ import os
 from CS import detect_CS, norm_LFP, norm_high_pass, get_field_mat, create_random_intervals, concatenate_segments
 import uneye
 
+# add byte images 
+import io
+import base64 
+from PIL import Image, ImageQt
+from pic2str import logo
+
+# this creates a .py file containing a variable of byte data from an image.
+# import base64
+# def pic2str(file, functionName):
+#     pic = open(file, 'rb')
+#     content = '{} = {}\n'.format(functionName, base64.b64encode(pic.read()))
+#     pic.close()
+
+#     with open('pic2str.py', 'a') as f:
+#         f.write(content)
+        
 class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=60, height=20, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -58,7 +74,7 @@ class Frame(QMainWindow):
         self.left = 500
         self.top = 200
         self.width = 1600
-        self.height = 900
+        self.height = 1000
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.title = 'CS Detection GUI'
         self.setWindowTitle(self.title)
@@ -66,6 +82,7 @@ class Frame(QMainWindow):
         qtRectangle = self.frameGeometry()
         centerPoint = QDesktopWidget().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
+        qtRectangle.moveTop(10)
         self.move(qtRectangle.topLeft())
 
         self.table_widget = Content(self)
@@ -83,12 +100,14 @@ class Content(QWidget):
         self.LFP_varname = 'RAW'
         self.HIGH_varname = 'HIGH'
         self.SS_varname = 'SS_train'
+        self.Label_varname = 'Labels'
         self.LFP = []
         self.HIGH = []
         self.Labels = []
         self.Intervals_inspected = []
         self.upload_LFP = []
         self.upload_HIGH = []
+        self.upload_Label = []
         self.label = []
         self.interval_inspected = []
         self.upload_fileName = []
@@ -166,6 +185,7 @@ class Content(QWidget):
 
         # Groupboxes
         self.data_input_box = QGroupBox("Data input")
+        self.save_label_box = QGroupBox("Save labels of current recording")
         self.save_box = QGroupBox("Save training data")
         self.loaded_files_box = QGroupBox("Loaded files")
         self.select_cs_box = QGroupBox("Select CSs")
@@ -174,12 +194,12 @@ class Content(QWidget):
         # List of loaded files
         self.loaded_file_listWidget = QListWidget() 
         self.loaded_file_listWidget.setFixedHeight(self.loaded_files_box.height()-70)
-
         self.loaded_file_listWidget.update()
         
         # Add groupboxes to first tab
         self.create_data_input_box()
         # self.create_information_box()
+        self.create_save_label_box()
         self.create_save_box()
         self.create_loaded_files_box()
         self.create_select_cs_box()
@@ -191,8 +211,9 @@ class Content(QWidget):
         layout.addWidget(self.data_input_box, 0, 0)
         # layout.addWidget(self.information_box, 1, 0)
         layout.addWidget(self.loaded_files_box, 2, 0)
-        layout.addWidget(self.save_box, 3, 0)
-        layout.addWidget(self.after_labeling_box, 4, 0)
+        layout.addWidget(self.save_label_box, 3, 0)
+        layout.addWidget(self.save_box, 4, 0)
+        layout.addWidget(self.after_labeling_box, 5, 0)
         left_panel.setLayout(layout)
         # self.tab_preprocessing.layout.addWidget(self.data_input_box, 0, 1)
         self.tab_label_data.layout.addWidget(left_panel, 0, 0)
@@ -378,13 +399,35 @@ class Content(QWidget):
 
         self.data_input_box.setLayout(data_input_layout)
         # self.data_input_box.setStyleSheet('border: 1px solid blue;')
+        
+    def create_save_label_box(self):
+        save_label_layout = QVBoxLayout()
+        
+        save_label_button = QPushButton('Save CS label')
+        save_label_button.clicked.connect(self.saveCurrentFile)
+        
+        info_label = QLabel()
+        info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
+        info_label.setPixmap(info_icon.pixmap(20, 20))
+        info_label.setFixedWidth(30)
+        info_label.setToolTip(self.info_save_label())
+        info_label.setAlignment(Qt.AlignTop)
+        info_label.setAlignment(Qt.AlignHCenter)
+        
+        save_label_layout = QHBoxLayout()
+        save_label_layout.addWidget(info_label)
+        save_label_layout.addWidget(save_label_button)
+        save_label_layout.setSpacing(0)
+        save_label_layout.setContentsMargins(0,10,10,10)
+        
+        self.save_label_box.setLayout(save_label_layout)
 
     def create_save_box(self):
-        save_layout = QVBoxLayout()
+        # save_layout = QVBoxLayout()
         
         save_button = QPushButton('Save')
         save_button.clicked.connect(self.saveFileDialog)
-        save_layout.addWidget(save_button)
+        # save_layout.addWidget(save_button)
         
         info_label = QLabel()
         info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
@@ -412,6 +455,7 @@ class Content(QWidget):
         layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
         layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
         layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
+        layout.addRow(QLabel("Label variable name"), self.set_LabelVarname())
         # layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
         dialog.setLayout(layout)
@@ -509,7 +553,17 @@ class Content(QWidget):
         goto_Colab_button = QPushButton("TRAIN ALGORITHM")
         goto_Colab_button.setToolTip('Please finish labeling data before going to Colab')
         goto_Colab_button.clicked.connect(self.open_Colab)
-        goto_Colab_button.setIcon(QIcon(('./img/colab_logo.png')))
+
+        # Load byte data
+        byte_data = base64.b64decode(logo)
+        image_data = io.BytesIO(byte_data)
+        image = Image.open(image_data)
+
+        # PIL to QPixmap
+        qImage = ImageQt.ImageQt(image)
+        image = QPixmap.fromImage(qImage)
+        goto_Colab_button.setIcon(QIcon((image)))
+        # goto_Colab_button.setIcon(QIcon(('./img/colab_logo.png')))
         
         info_label = QLabel()
         info_icon = self.style().standardIcon(getattr(QStyle, 'SP_MessageBoxInformation'))
@@ -550,6 +604,13 @@ class Content(QWidget):
         lineedit = QLineEdit(self.LFP_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
+    
+    def set_LabelVarname(self):
+        def changeText():
+            self.Label_varname = lineedit.text()
+        lineedit = QLineEdit(self.Label_varname)
+        lineedit.textChanged.connect(changeText)
+        return lineedit
 
     # creating file upload dialog
     def openFileNameDialog(self):
@@ -576,9 +637,15 @@ class Content(QWidget):
             self.upload_fileName = fileName.split('.')[-2].split('/')[-1]
             self.upload_LFP = np.array(mat[self.LFP_varname][0])
             self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
+            if self.Label_varname in mat.keys():
+                self.label = np.array(mat[self.Label_varname][0])
+                print('Label is loaded')                   
+                self.labels_to_spans()
+            else:
+                self.cs_spans = np.array([[]])
             self.interval_inspected = np.zeros_like(self.upload_LFP)
             self.cs_span = np.zeros(2)
-            self.cs_spans = np.array([[]])
+            
             self.cs_patch = []
             self.cs_patch2 = []
             self.ID.append(self.upload_fileName)
@@ -589,6 +656,27 @@ class Content(QWidget):
             self.Intervals_inspected.append(self.interval_inspected)
             self.plot_data()
             self.create_loaded_files_box()
+            
+    def saveCurrentFile(self):
+        if self.ID:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            fileName, _ = QFileDialog.getSaveFileName(self, "Save file", self.upload_fileName+".mat",
+                                                      "All Files (*);;MATLAB Files (*.mat)", options=options)
+            if fileName:
+                LFP = self.upload_LFP
+                HIGH = self.upload_HIGH
+                Label = self.label
+                
+                sp.savemat(fileName, {self.LFP_varname: LFP,
+                                      self.HIGH_varname: HIGH,
+                                      self.Label_varname: Label,}, do_compression=True)
+        else:
+            errorbox = QMessageBox()
+            errorbox.setWindowTitle("Warning")
+            errorbox.setText("Upload a PC recording")
+            errorbox.exec_()
+            
 
     def saveFileDialog(self):
         options = QFileDialog.Options()
@@ -661,7 +749,7 @@ class Content(QWidget):
         self.canvas.mpl_connect('motion_notify_event', self.draw_span)
         self.canvas.mpl_connect('button_release_event', self.set_cs_offset)
     
-    # Selecting CS 
+    # Selecting CSs 
     def click_control(self, event):
         if self.canvas.high_axes.patches or self.canvas.lfp_axes.patches:
             # for i in range(self.cs_spans.T.shape[0]):
@@ -728,9 +816,10 @@ class Content(QWidget):
             idx = np.argsort(onset)
             self.cs_spans = cs_spans[:, idx].astype(int)
             print('cs_spans:',self.cs_spans, self.cs_spans.shape, np.argsort(onset))
-            self.create_labels()
+            self.create_label()
             self.cs_counter.setText('{} CSs selected'.format(self.cs_spans.T.shape[0]))
             
+    # Zoom and slider
     def setupSlider(self, minimum, maximum, step, x0=0):
         # print('setupSlider', self.lims)
         self.scroll.setMinimum(minimum)
@@ -881,7 +970,7 @@ class Content(QWidget):
                                         "Press yes to upload next file and no if you want to restart!",
                                         QMessageBox.Yes, QMessageBox.No)
         if replybox == QMessageBox.Yes:
-            self.create_labels()
+            self.create_label()
             self.PC_Array[self.PC_Counter] = self.x_values
             self.PC_Counter += 1
             self.x_values = [[0] * 2 for i in range(10)]
@@ -903,11 +992,11 @@ class Content(QWidget):
             self.x_values[self.backwardscounter][1] = 0
             self.value_counter -= 1
 
-    def create_labels(self):
-        labels = np.zeros_like(self.upload_LFP)
+    def create_label(self):
+        label = np.zeros_like(self.upload_LFP)
         for i in range(self.cs_spans.T.shape[0]):
-            labels[self.cs_spans[0,i]:self.cs_spans[1,i]] = 1
-        self.label = labels
+            label[self.cs_spans[0,i]:self.cs_spans[1,i]] = 1
+        self.label = label
         idx = self.loaded_file_listWidget.currentRow()
         self.Labels[idx] = self.label
         self.cs_spans_all[idx] = self.cs_spans
@@ -916,6 +1005,20 @@ class Content(QWidget):
         self.Intervals_inspected[idx] = self.interval_inspected
         print(self.cs_spans_all)
         # self.Labels.append(labels)
+        
+    def labels_to_spans(self):
+        onset = np.where(np.diff(self.label.astype(int))==1)[0]
+        offset = np.where(np.diff(-self.label.astype(int))==1)[0]
+        print('onset',onset)
+        print('offset',offset)
+        print(len(onset), len(offset), len(self.label))
+        if len(onset) > len(offset):
+            offset[len(onset)] = len(self.label)
+        self.cs_spans = np.zeros([2, len(onset)],dtype=int)
+        for i in range(len(onset)):
+            self.cs_spans[0, i] = onset[i]
+            self.cs_spans[1, i] = offset[i]
+        print('self.cs_spans',self.cs_spans)
         
     # explanation texts for the first tab
     def info_data_input(self):
@@ -929,6 +1032,10 @@ class Content(QWidget):
     def info_loaded_files(self):
         text = """Loaded files are stored here. 
     - plot/remove the selected file"""
+        return text
+    
+    def info_save_label(self):
+        text = """Save CS labels of the current recording, together with aciton potential and LFP."""
         return text
     
     def info_save_data(self):
