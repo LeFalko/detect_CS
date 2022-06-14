@@ -6,7 +6,7 @@ You can download our GUI here
 [for Windows]() and
 [for Mac]().
 
-## How to use the GUI
+## <a name="top">How to use the GUI</a>
 
 ### [STEP 1: Labeling your data](#labeling)
 ### [STEP 2: Training the network](#training)
@@ -43,7 +43,12 @@ When you are heppy with the selected spans, simply press the "save" button in th
 
 The last step is to press the "Train algorithm" button and move to the training part in your browser.
 
-### <a name="training"> Training the network</a> 
+<div style="text-align: right">
+
+[back to top](#top)
+</div>
+
+### <a name="training"> STEP2: Training the network</a> 
 
 **1: Connecting your drive**  
 You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
@@ -61,8 +66,12 @@ The fifth cells trains your network and needs no interactions other that running
 **3: Downloading weights**
 After your network is done with training, you can simply download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
 
+<div style="text-align: right">
 
-### <a name="detecting">Detecting complex spikes</a>
+[back to top](#top)
+</div>
+
+### <a name="detecting">STEP3: Detecting complex spikes</a>
 
 **1: Uploading files**  
 After opening the GUI again, navigate to the "Detect CS" tab at the top. 
@@ -76,8 +85,12 @@ By clicking the "Detect CS" button and pressing "ok" in the dialog the detection
 
 You can move to the post-processing tab after running the algortihm to see your result and save clusters.
 
+<div style="text-align: right">
 
-### <a name="post-processing">Post-processing</a>
+[back to top](#top)
+</div>
+
+### <a name="post-processing">STEP4: Post-processing</a>
 
 **1: Uploading files**  
 Again, you first need to upload some files. This time, the loaded files have to be your recording from the last tab and the corresponding output file, so you should upload your file "filename.mat" as the upper file and your file "filename_output.mat" as the lower file.
