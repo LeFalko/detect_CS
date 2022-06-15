@@ -12,7 +12,7 @@ You can download our GUI here
 ### [STEP 2: Training the network](#training)
 ### [STEP 3: Detecting CSs](#detecting)
 ### [STEP 4: Post-processing](#post-processing) 
-### [Trouble shooting](#trouble-shooting)
+### [Trouble shoot](#trouble-shooting)
 
 &nbsp;
 
@@ -52,7 +52,8 @@ sp.savemat(FileName,
 # HIGH, LFP, Labels are numpy arrays
 ```
 
-### 1: Choose parameters
+<a name="set-parameters"></a>
+### 1: Set parameters
 
 The first thing to do when opening the GUI is setting your parameters. Click the ***Set parameters*** button in *Data input* section in the top left corner. You can set the following parameters.
 
@@ -109,8 +110,8 @@ This step is not necessary, but if you want to save your CS labels of each recor
     
     1 during CS dischage, 0 otherwise. 
 
-### 5: Save training data
 <a name="save-training-data"></a>
+### 5: Save training data
 
 When you finished labeling all the uploaded files, press **Save** button in the *Save training data* section.
 This will not save all the time range, but automatically select only the selected CS spans and some time before and after them from each file to include non-CS spans. This is done to reduce the data size and speed up the training.
@@ -132,21 +133,21 @@ Google Colab is a free cloud computing service for Jupyter notebook offered by G
 
 You can run each cell by clicking the triangle on the left or <kbd>Shift</kbd>+<kbd>Enter</kbd>.
 
-**1: Let Google access your Google Drive**
+### 1: Let Google access your Google Drive
 
 First, in order to run this notebook, you need to give Google permission to access your Google Drive.
 
-**2: Install the toolbox on your Google Drive**
+### 2: Install the toolbox on your Google Drive
 
 This cell installs the necessary tools on your Google Drive. This process can take a few minutes.
 
-**3: Upload your training data**
+### 3: Upload your training data
 
 By running this cell, you can upload the training data that you have saved in the [fist step](#save-training-data).
 
-If you receive an error "MessageError: TypeError: google.colab._files is undefined", check your browser's setting and allow third-party cookies.
+If you receive an error <cite>"MessageError: TypeError: google.colab._files is undefined"</cite>, check your browser's setting and allow third-party cookies.
 
-**4: Advanced parameter setting**
+### 4: Advanced parameter setting
 
 You can change these paraeters only when the training does not work well. But it needs to be run for the training to work.
 
@@ -163,12 +164,13 @@ $nb=mp^2+mp^2\cdot ks+(mp\cdot ks) - mp+2ks-2$
 Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org)
 for detail.
 
+### 5: Train your network
 
-The fifth cells trains your network and needs no interactions other that running it.
+By running this cell, you can train your network. It can take a while depending on the size of your data.
 
-**3: Downloading weights**
+### 6: Downloading weights
 
-After your network is done with training, you can simply download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
+After your network is done with training, you can run this cell to download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
 
 <div style="text-align: right">
 
@@ -177,7 +179,23 @@ After your network is done with training, you can simply download the weights an
 
 ## <a name="detecting">STEP3: Detecting complex spikes</a>
 
-**1: Uploading files**  
+After opening the GUI again, navigate to the "Detect CS" tab at the top. For detecting CSs, there are two options. One is to process a single cell, which is useful to check whether the training worked well. The other option is to process all cells in one folder at once. You can use this option once you are sure that the training was successful.
+
+### 0: Data format
+
+A file to be uploaded is similar to [STEP 1](#labeling) and should contain the following variables in .mat format.
+- High band-passed action potential: 1 x time
+- low band-passed LFP: 1 x time    
+- SS train (optional): 1 x time 
+    
+    1 when SS fires, 0 otherwise. This is not used in the detection process, but useful later for [post-processing](#post-processing).
+    **The sampling rate of SS train can be different from the other two variables** (default is 1000 Hz).  
+
+### 1: Set sampling rate and variable names
+
+Just like in [STEP 1](#set-parameters), click **Set parameters** button to set the sampling rate and variable names to be loaded. 
+    
+### 1: Uploading files  
 
 After opening the GUI again, navigate to the "Detect CS" tab at the top. 
 Choose if you want to detect on one or multiple files. Press the upper two buttons to upload a recording on which the algorithm will detect and to upload the weights you just saved from the Colab sheet in your browser. If you chose to detect on multiple files, you will need to specify an output folder as well.
@@ -185,7 +203,7 @@ This is the detection tab of the GUI when re-entering:
 ![](./img/Screenshot4.png)
 
 
-**2: Detecting CS**
+### 2: Detecting CS
 
 By clicking the "Detect CS" button and pressing "ok" in the dialog the detection will start. The results of the algorithm will be saved in a file with the selected file name in the beginning and "output" in the end, so the name of the resulting file ist "yourfilename_output.mat.
 
@@ -221,6 +239,7 @@ Lastly, the "Save selected cluster data" lets you save the selected clusters as 
 </div>
 
 ## <a name="trouble-shooting">Trouble shooting</a>
+
 In case the app crashes, you can run from a command prompt (on Windows) and see what kind of error is prompted.
 
 <div style="text-align: right">
