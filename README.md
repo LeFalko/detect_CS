@@ -1,6 +1,7 @@
 # A complete graphical user interface for detecting cerebellar complex spikes  
 
 You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"}
+<a href="https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.or" target="_blanc">journal of neurophysiology</a>
 
 You can download our GUI here
 [for Windows]() and
@@ -159,7 +160,9 @@ $nb=mp^2+mp^2\cdot ks+(mp\cdot ks) - mp+2ks-2$
 - ks: default is 9, needs to be odd
 - mp: default is 7, needs to be odd
 
-Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"} for detail.
+Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"} 
+for detail.
+
 
 The fourth cell cell doesnt have to be changed, but it needs to run for the training to work. Changes to the number of iterations the algortihm runs, the kernel size or the max pooling size can be made here.
 
