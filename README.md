@@ -20,6 +20,8 @@ You can download our GUI here
 This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
 
+<a name="data-format"></a>
+
 ### 0: Data format
 
 A file to be uploaded should contain the following variables in .mat format.
@@ -168,9 +170,10 @@ for detail.
 
 By running this cell, you can train your network. It can take a while depending on the size of your data.
 
-### 6: Downloading weights
 
-After your network is done with training, you can run this cell to download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
+### <a name="download-weights">6: Downloading weights</a>
+
+After your network is done with training, you can run this cell to download the weights and select your preferred folder to save them in. The weights does not have any filename extension (such as .txt, .mat). This is the last step in your browser. You can return to the GUI after completing it.
 
 <div style="text-align: right">
 
@@ -179,11 +182,15 @@ After your network is done with training, you can run this cell to download the 
 
 ## <a name="detecting">STEP3: Detecting complex spikes</a>
 
-After opening the GUI again, navigate to the "Detect CS" tab at the top. For detecting CSs, there are two options. One is to process a single cell, which is useful to check whether the training worked well. The other option is to process all cells in one folder at once. You can use this option once you are sure that the training was successful.
+After opening the GUI again, navigate to the "Detect CS" tab at the top. For detecting CSs, there are two options. One is to process a single cell ([Single file mode](#single-file-mode)), which is useful to check whether the training worked well. The other option is to process all cells in one folder at once ([Serial proess mode](#serial-process-mode)). You can use this option once you are sure that the training was successful.
 
+This is the detection tab of the GUI when re-entering:
+![](./img/Screenshot4.png)
+
+<a name="data-format2"></a>
 ### 0: Data format
 
-A file to be uploaded is similar to [STEP 1](#labeling) and should contain the following variables in .mat format.
+A file to be uploaded is similar to [STEP 1](#data-format) and should contain the following variables in .mat format.
 - High band-passed action potential: 1 x time
 - low band-passed LFP: 1 x time    
 - SS train (optional): 1 x time 
@@ -194,13 +201,39 @@ A file to be uploaded is similar to [STEP 1](#labeling) and should contain the f
 ### 1: Set sampling rate and variable names
 
 Just like in [STEP 1](#set-parameters), click **Set parameters** button to set the sampling rate and variable names to be loaded. 
+
+<a name="single-file-mode"></a>
+### ---Single file mode---
+
+### 1: Uploade a file
+
+In the *Single file* section, click **Upload a PC recording** button to upload your file containing the [abovementioned variables](#data-format2).
+
+### 2: Upload weights
+
+To upload weights that you have downloaded from [Google Colab](#download-weights), click **Upload your downloaded weights from Colab** button.
+
+<a name="serial-process-mode"></a>
+### ---Serial process mode---
+
+### 1: Select a folder
+
+You need to select a folder in which you saved your recordings. This folder should only contain files of the [same data format](#data-format2). 
+
+### 2: Select a folder to save output
+
+In Serial process mode, it makes an output file per each recording file. Therefore, you need to designate a folder for the output files. To do this, click **Select folder to save output** button.
+
+### 3: Upload weights
+
+Same as [Single file mode](#single-file-mode), click **Upload your downloaded weights from Colab** button to upload weights that you have downloaded from [Google Colab](#download-weights).
+
     
 ### 1: Uploading files  
 
 After opening the GUI again, navigate to the "Detect CS" tab at the top. 
 Choose if you want to detect on one or multiple files. Press the upper two buttons to upload a recording on which the algorithm will detect and to upload the weights you just saved from the Colab sheet in your browser. If you chose to detect on multiple files, you will need to specify an output folder as well.
-This is the detection tab of the GUI when re-entering:
-![](./img/Screenshot4.png)
+
 
 
 ### 2: Detecting CS

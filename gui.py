@@ -97,7 +97,7 @@ class Content(QWidget):
         "self.popup_window = QWidget()"
 
         # Initialize arrays and helper values
-        self.LFP_varname = 'RAW'
+        self.LFP_varname = 'LFP'
         self.HIGH_varname = 'HIGH'
         self.SS_varname = 'SS_train'
         self.Label_varname = 'Labels'
