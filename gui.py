@@ -403,7 +403,7 @@ class Content(QWidget):
     def create_save_label_box(self):
         save_label_layout = QVBoxLayout()
         
-        save_label_button = QPushButton('Save CS label')
+        save_label_button = QPushButton('Save CS labels')
         save_label_button.clicked.connect(self.saveCurrentFile)
         
         info_label = QLabel()
@@ -455,7 +455,7 @@ class Content(QWidget):
         layout.addRow(QLabel("Sampling rate [Hz]"), self.set_samplingRate())
         layout.addRow(QLabel("Action potential variable name"), self.set_HighVarname())
         layout.addRow(QLabel("LFP variable name"), self.set_LFPVarname())
-        layout.addRow(QLabel("Label variable name"), self.set_LabelVarname())
+        layout.addRow(QLabel("CS label variable name"), self.set_LabelVarname())
         # layout.addRow(QLabel("Max. CSs to select"), self.set_maxCSs())
         layout.addRow(ok_button)
         dialog.setLayout(layout)
@@ -527,6 +527,7 @@ class Content(QWidget):
             self.LFP.pop(idx)
             self.HIGH.pop(idx)
             self.Labels.pop(idx)
+            self.cs_spans_all.pop(idx)
             
             self.canvas.high_axes.cla()
             self.canvas.lfp_axes.cla()
@@ -593,7 +594,6 @@ class Content(QWidget):
     def set_HighVarname(self):
         def changeText():
             self.HIGH_varname = lineedit.text()
-                
         lineedit = QLineEdit(self.HIGH_varname)
         lineedit.textChanged.connect(changeText)
         return lineedit
@@ -639,9 +639,11 @@ class Content(QWidget):
             self.upload_HIGH = np.array(mat[self.HIGH_varname][0])
             if self.Label_varname in mat.keys():
                 self.label = np.array(mat[self.Label_varname][0])
-                print('Label is loaded')                   
+                print('Label is loaded')  
+                print(self.Label_varname)                 
                 self.labels_to_spans()
             else:
+                print('CS labels not available')
                 self.cs_spans = np.array([[]])
             self.interval_inspected = np.zeros_like(self.upload_LFP)
             self.cs_span = np.zeros(2)

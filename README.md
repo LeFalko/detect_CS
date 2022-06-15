@@ -19,29 +19,103 @@ You can download our GUI here
 ### <a name="labeling">STEP1: Labeling your data</a>
 This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
+**0: Data format**
+
+A file to be uploaded should contain the following variables in .mat format.
+- High band-passed action potential: 1 x time
+- low band-passed LFP: 1 x time
+
+    
+- CS labels (optional): 1 x time 
+    
+    1 during CS dischage, 0 otherwise. 
+    
+    If you already have labeled CSs, you can also use them. But this variable is not necessary (you'll label CSs and create this variable in this section).
+
+An example to save variables in MATLAB:
+```Matlab
+YourVariable = struct();
+YourVariable.HIGH = HIGH;
+YourVariable.RAW = RAW;
+YourVariable.Labels = Labels;
+
+save(FileName, '-struct', 'YourVariable');
+```
+
+An example to save variables in Python:
+```python
+import scipy.io as sp
+
+sp.savemat(FileName, 
+    {HIGH: HIGH, LFP: LFP, Labels: Labels,}, 
+    do_compression=True)
+
+# HIGH, LFP, Labels are numpy arrays
+```
 
 **1: Choose parameters**
-The first thing to do when opening the GUI is setting your parameters. To do that, you have to go the "Set parameters" button in the top left corner and choose your recorded sampling rate, as well as entering the action potential and local field potential variable names of your recordings.
+
+The first thing to do when opening the GUI is setting your parameters. Click the ***Set parameters*** button in *Data input* section in the top left corner. You can set the following parameters.
+
+- Sampling rate [Hz]
+- Action potensial variable name
+- LFP variable name
+- CS label variable name
+
+CS label is optional. If you haven't labeled CSs, you can leave this empty.
+
+Although this is not tested and therefore not recommended, in case LFP is missing, you could set the LFP variable name same as action potentian (set both "HIGH", for example). 
 
 **2: Upload files**
-After that, you click on the "Add PC for manual labeling" button and navigate to the folder with your recordings. Select a filee and press "open" to load it. In this window you can also drag your recordings folder to the left area to access it more quickly at a later time. 
-The file that is added first should be plotted instantly after loading, so you can label instantly or load more files and select on which to start. All files will be added to the "loadad files" list on the left, where you can select single files to plot or remove. 
-After uploading and plotting, the GUI should look similar to this:
+
+After that, you click on the ***Add PC for manual labeling*** button below ***Set parameters*** button and navigate to the folder with your recordings. Select a file and press *open* to load it. 
+
+The file that is added should be plotted instantly after loading, so you can label instantly or load more files and select on which to start. All files will be added to the list in the *loaded files* section on the left, where you can select single files to plot or remove. 
+
+After uploading and plotting, the GUI should look like this:
 ![](./img/Screenshot2.png)
 
 **3: Label a recording**
-To label your first recording, you can choose a observed span by clicking on one of the top buttons or using the keyboard shortcuts "Q","W","E" and using "R" and "T" to zoom. Move around the file and find CS by scrolling the bottom bar. 
-Dragging across one of the plots will create a selected span on which the algorithm will train, so it is important to mark the beginning and the end of the complex spike as accurately as possible- You can deselect a CS by simply left-clicking on the selected span.
-If you want to find an already selected CS you can do so by buttons directly above the plot or pressing "C" to move to the previous, or pressing "V" to move to the following CS (regarding time in the recording, not time of selection in the GUI).
-This is an example of a Complex Spike recording:
+
+To label CSs from your recording, you can select a CS by clicking at the onset and dragging till the offset of a CS. Selected span will be colored with red. Select CS spans as accurately as possible in order to create a good training set. You can deselect a CS span by simply clicking on the red span.
+
+We recommend labeling ~10 CSs uniformly througuout  the recording (not only from the first few seconds, for example), so that detection can be robust to the changes of the recording states.
+
+To change the time range of the plot, use the following function buttons (and keyboard short cut):
+- **Full (Q)**: Set the time range full
+- **1s (W)**: Set the time range 1 s
+- **50ms (E)**: Set the time range 50 ms
+- **Zoom in (R)**: Zoom in 
+- **Zoom out (T)**: Zoom out
+
+Also, you can move the time range by using the slider below the plots, or keyboard shortcut **(D)** for going backward and **(F)** for going forward.
+
+If you want to check CSs that you have already selected, use the following function buttons (and keyboard shortcut):
+
+- **Previous CS (C)**: Jump to the previous CS
+- **Next CS (V)**: Jump to the next CS
+
+
+This is an example of a selected CS:
 ![](./img/Screenshot3.png)
 
 After labeling the first recording, select another file in your list and press "plot" to plot the new recording in the GUI and proceed with labling. 
 
-**4: Save Training data**
-When you are heppy with the selected spans, simply press the "save" button in the bottom left corner and choose a filename for your training data. the filetype should stay at .mat.
+**4: Save CSs labels from current plot**
 
-The last step is to press the "Train algorithm" button and move to the training part in your browser.
+This step is not necessary, but if you want to save your CS labels of each recording separately and reuse it for a differnt training set, use **Save CS labels** button in the *Save labels of current plot* section. This will save the following variables in a .mat format, just same as the one that you upload.
+- High band-passed action potential: 1 x time
+- low band-passed LFP: 1 x time    
+- CS labels (optional): 1 x time 
+    
+    1 during CS dischage, 0 otherwise. 
+
+**5: Save training data**
+
+When you finished labeling all the uploaded files, press **Save** button in the *Save training data* section.
+This will not save all the time range, but automatically select only the selected CS spans and some time before and after them from each file to include non-CS spans. This is done to reduce the data size and speed up the training.
+
+The last step is to press the **Train algorithm** button and move to the training part in your browser.
 
 <div style="text-align: right">
 
@@ -50,11 +124,13 @@ The last step is to press the "Train algorithm" button and move to the training 
 
 ### <a name="training"> STEP2: Training the network</a> 
 
-**1: Connecting your drive**  
+**1: Connecting your drive**
+
 You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
 
 
-**2: Train your network**    
+**2: Train your network**
+
 The second cell installs the necessary tools on your drive, so just run the cell and wait until all the tools are installed.
 
 After that, you need to run the third cell and upload the file with the training data you saved earlier, it can be found in the "Data" folder by default.
@@ -64,6 +140,7 @@ The fourth cell cell doesnt have to be changed, but it needs to run for the trai
 The fifth cells trains your network and needs no interactions other that running it.
 
 **3: Downloading weights**
+
 After your network is done with training, you can simply download the weights and select your preferred folder to save them in. This is the last step in your browser. You can return to the GUI after completing it.
 
 <div style="text-align: right">
@@ -74,6 +151,7 @@ After your network is done with training, you can simply download the weights an
 ### <a name="detecting">STEP3: Detecting complex spikes</a>
 
 **1: Uploading files**  
+
 After opening the GUI again, navigate to the "Detect CS" tab at the top. 
 Choose if you want to detect on one or multiple files. Press the upper two buttons to upload a recording on which the algorithm will detect and to upload the weights you just saved from the Colab sheet in your browser. If you chose to detect on multiple files, you will need to specify an output folder as well.
 This is the detection tab of the GUI when re-entering:
@@ -81,6 +159,7 @@ This is the detection tab of the GUI when re-entering:
 
 
 **2: Detecting CS**
+
 By clicking the "Detect CS" button and pressing "ok" in the dialog the detection will start. The results of the algorithm will be saved in a file with the selected file name in the beginning and "output" in the end, so the name of the resulting file ist "yourfilename_output.mat.
 
 You can move to the post-processing tab after running the algortihm to see your result and save clusters.
@@ -92,19 +171,32 @@ You can move to the post-processing tab after running the algortihm to see your 
 
 ### <a name="post-processing">STEP4: Post-processing</a>
 
-**1: Uploading files**  
+**1: Uploading files** 
+
 Again, you first need to upload some files. This time, the loaded files have to be your recording from the last tab and the corresponding output file, so you should upload your file "filename.mat" as the upper file and your file "filename_output.mat" as the lower file.
 The names are shown after selection, so you can check and reupload anytime.
 
 **2: Plotting data**
+
 press the "Setting for plot" button in the big plotting window to change parameters (like simple spike variable name or sampling rate) to your personally used values. These can be changed and adjusted after plotting. 
 Press "Plot data" to see the CS clusters the algorithm detected on your file.
 This is an example of how it should look after plotting your files:
 ![](./img/Screenshot5.png)
 
 **3: Selecting clusters and saving**
+
 In the select clusters box the individual clusters can be selected to plot individually and outliers or noisy data can be deselected to remove from the results. The "update" button replots only the selected clusters.
 Lastly, the "Save selected cluster data" lets you save the selected clusters as a matlab file. Additional information to any button can be found in tooltips by hovering the information button in every box.
 
+<div style="text-align: right">
+
+[back to top](#top)
+</div>
+
 ### <a name="trouble-shooting">Trouble shooting</a>
 In case the app crashes, you can run from a command prompt (on Windows) and see what kind of error is prompted.
+
+<div style="text-align: right">
+
+[back to top](#top)
+</div>
