@@ -1,6 +1,6 @@
 # A complete graphical user interface for detecting cerebellar complex spikes  
 
-You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org)
+You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"}
 
 You can download our GUI here
 [for Windows]() and
@@ -110,12 +110,15 @@ This step is not necessary, but if you want to save your CS labels of each recor
     
     1 during CS dischage, 0 otherwise. 
 
-**5: Save training data**
+<a name="save-training-data">**5: Save training data**</a>
 
 When you finished labeling all the uploaded files, press **Save** button in the *Save training data* section.
 This will not save all the time range, but automatically select only the selected CS spans and some time before and after them from each file to include non-CS spans. This is done to reduce the data size and speed up the training.
 
 The last step is to press the **Train algorithm** button and move to the training part in your browser.
+
+**6: Go to Google Colab**
+After you save the training data, click **TRAIN ALGORITHM** button in the *After labeling* section, this will take you to a Google Colab notebook to train the network.
 
 <div style="text-align: right">
 
@@ -124,16 +127,39 @@ The last step is to press the **Train algorithm** button and move to the trainin
 
 ### <a name="training"> STEP2: Training the network</a> 
 
-**1: Connecting your drive**
+Google Colab is a free cloud computing service for Jupyter notebook offered by Google. Here you can train your network fast and easily thanks to Google's powerful computational resources.
 
-You will arrive at a Google colab sheet with 6 steps. Run the first cell (click on the play button) and connect to your google drive by logging in to your google account and letting the colab sheet access your Google Drive.
+You can run each cell by clicking the triangle on the left or <kbd>Shift</kbd>+<kbd>Enter</kbd>.
 
+**1: Let Google access your Google Drive**
 
-**2: Train your network**
+First, in order to run this notebook, you need to give Google permission to access your Google Drive.
 
-The second cell installs the necessary tools on your drive, so just run the cell and wait until all the tools are installed.
+**2: Install the toolbox on your Google Drive**
 
-After that, you need to run the third cell and upload the file with the training data you saved earlier, it can be found in the "Data" folder by default.
+This cell installs the necessary tools on your Google Drive. This process can take a few minutes.
+
+**3: Upload your training data**
+
+By running this cell, you can upload the training data that you have saved in the [fist step](#save-training-data).
+
+If you receive an error "MessageError: TypeError: google.colab._files is undefined", check your browser's setting and allow third-party cookies.
+
+**4: Advanced parameter setting**
+
+You can change these paraeters only when the training does not work well. 
+
+Max numner of iteration
+- max_iter: default is 3000
+
+The number of bins ($nb$) taken into account by the network. 
+The default value was used for a sampling rate of 25 kHz. It is given by
+
+$nb=mp^2+mp^2\cdot ks+(mp\cdot ks) - mp+2ks-2$
+- ks: default is 9, needs to be odd
+- mp: default is 7, needs to be odd
+
+Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"} for detail.
 
 The fourth cell cell doesnt have to be changed, but it needs to run for the training to work. Changes to the number of iterations the algortihm runs, the kernel size or the max pooling size can be made here.
 
