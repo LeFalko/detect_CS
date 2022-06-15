@@ -1,7 +1,6 @@
 # A complete graphical user interface for detecting cerebellar complex spikes  
 
-You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"}
-<a href="https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.or" target="_blanc">journal of neurophysiology</a>
+You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org)
 
 You can download our GUI here
 [for Windows]() and
@@ -17,16 +16,15 @@ You can download our GUI here
 
 &nbsp;
 
-### <a name="labeling">STEP1: Labeling your data</a>
+## <a name="labeling">STEP1: Labeling your data</a>
 This is how the GUI should look when opening it for the first time:
 ![](./img/Screenshot1.png)
-**0: Data format**
+
+### 0: Data format
 
 A file to be uploaded should contain the following variables in .mat format.
 - High band-passed action potential: 1 x time
-- low band-passed LFP: 1 x time
-
-    
+- low band-passed LFP: 1 x time    
 - CS labels (optional): 1 x time 
     
     1 during CS dischage, 0 otherwise. 
@@ -54,7 +52,7 @@ sp.savemat(FileName,
 # HIGH, LFP, Labels are numpy arrays
 ```
 
-**1: Choose parameters**
+### 1: Choose parameters
 
 The first thing to do when opening the GUI is setting your parameters. Click the ***Set parameters*** button in *Data input* section in the top left corner. You can set the following parameters.
 
@@ -67,7 +65,7 @@ CS label is optional. If you haven't labeled CSs, you can leave this empty.
 
 Although this is not tested and therefore not recommended, in case LFP is missing, you could set the LFP variable name same as action potentian (set both "HIGH", for example). 
 
-**2: Upload files**
+### 2: Upload files
 
 After that, you click on the ***Add PC for manual labeling*** button below ***Set parameters*** button and navigate to the folder with your recordings. Select a file and press *open* to load it. 
 
@@ -76,7 +74,7 @@ The file that is added should be plotted instantly after loading, so you can lab
 After uploading and plotting, the GUI should look like this:
 ![](./img/Screenshot2.png)
 
-**3: Label a recording**
+### 3: Label a recording
 
 To label CSs from your recording, you can select a CS by clicking at the onset and dragging till the offset of a CS. Selected span will be colored with red. Select CS spans as accurately as possible in order to create a good training set. You can deselect a CS span by simply clicking on the red span.
 
@@ -102,7 +100,7 @@ This is an example of a selected CS:
 
 After labeling the first recording, select another file in your list and press "plot" to plot the new recording in the GUI and proceed with labling. 
 
-**4: Save CSs labels from current plot**
+### 4: Save CSs labels from current plot
 
 This step is not necessary, but if you want to save your CS labels of each recording separately and reuse it for a differnt training set, use **Save CS labels** button in the *Save labels of current plot* section. This will save the following variables in a .mat format, just same as the one that you upload.
 - High band-passed action potential: 1 x time
@@ -111,14 +109,16 @@ This step is not necessary, but if you want to save your CS labels of each recor
     
     1 during CS dischage, 0 otherwise. 
 
-<a name="save-training-data">**5: Save training data**</a>
+### 5: Save training data
+<a name="save-training-data"></a>
 
 When you finished labeling all the uploaded files, press **Save** button in the *Save training data* section.
 This will not save all the time range, but automatically select only the selected CS spans and some time before and after them from each file to include non-CS spans. This is done to reduce the data size and speed up the training.
 
 The last step is to press the **Train algorithm** button and move to the training part in your browser.
 
-**6: Go to Google Colab**
+### 6: Go to Google Colab
+
 After you save the training data, click **TRAIN ALGORITHM** button in the *After labeling* section, this will take you to a Google Colab notebook to train the network.
 
 <div style="text-align: right">
@@ -126,7 +126,7 @@ After you save the training data, click **TRAIN ALGORITHM** button in the *After
 [back to top](#top)
 </div>
 
-### <a name="training"> STEP2: Training the network</a> 
+## <a name="training"> STEP2: Training the network</a> 
 
 Google Colab is a free cloud computing service for Jupyter notebook offered by Google. Here you can train your network fast and easily thanks to Google's powerful computational resources.
 
@@ -148,7 +148,7 @@ If you receive an error "MessageError: TypeError: google.colab._files is undefin
 
 **4: Advanced parameter setting**
 
-You can change these paraeters only when the training does not work well. 
+You can change these paraeters only when the training does not work well. But it needs to be run for the training to work.
 
 Max numner of iteration
 - max_iter: default is 3000
@@ -160,11 +160,9 @@ $nb=mp^2+mp^2\cdot ks+(mp\cdot ks) - mp+2ks-2$
 - ks: default is 9, needs to be odd
 - mp: default is 7, needs to be odd
 
-Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org){:target="_blank" rel="noopener"} 
+Check our [article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org)
 for detail.
 
-
-The fourth cell cell doesnt have to be changed, but it needs to run for the training to work. Changes to the number of iterations the algortihm runs, the kernel size or the max pooling size can be made here.
 
 The fifth cells trains your network and needs no interactions other that running it.
 
@@ -177,7 +175,7 @@ After your network is done with training, you can simply download the weights an
 [back to top](#top)
 </div>
 
-### <a name="detecting">STEP3: Detecting complex spikes</a>
+## <a name="detecting">STEP3: Detecting complex spikes</a>
 
 **1: Uploading files**  
 
@@ -198,7 +196,7 @@ You can move to the post-processing tab after running the algortihm to see your 
 [back to top](#top)
 </div>
 
-### <a name="post-processing">STEP4: Post-processing</a>
+## <a name="post-processing">STEP4: Post-processing</a>
 
 **1: Uploading files** 
 
@@ -222,7 +220,7 @@ Lastly, the "Save selected cluster data" lets you save the selected clusters as 
 [back to top](#top)
 </div>
 
-### <a name="trouble-shooting">Trouble shooting</a>
+## <a name="trouble-shooting">Trouble shooting</a>
 In case the app crashes, you can run from a command prompt (on Windows) and see what kind of error is prompted.
 
 <div style="text-align: right">
