@@ -6,6 +6,8 @@ You can download our GUI here
 [for Windows]() and
 [for Mac]().
 
+If you want to see and modify the codes, you can clone this repository. The codes were all written in Python.
+
 ## <a name="top">How to use the GUI</a>
 
 ### [STEP 1: Labeling your data](#labeling)
