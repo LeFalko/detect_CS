@@ -260,6 +260,10 @@ After uploading your recording and weights, click **Detct CS** button to start d
 
 The final step is to check the quality of CSs detected by the algorithm. The detected CSs are grouped by several clusters and you can select to save or discard each cluster of CSs.
 
+If CSs were successfully detected and follow the steps below, the third tab should in the end look like this:
+
+![](./img/Screenshot5.png)
+
 ### 0: Data format
 
 For the post-processing, you need two files:
@@ -299,8 +303,6 @@ After plotting, you can select which CS clusters to save, based on shapes of CS/
 First, click **Select CS cluster** button in the *Select clusters* section. Then you can see checkboxes, size of clusters and cluster ID with different colors. By default, all clusters will be saved. If some of the clusters are not CSs, uncheck the checkbox and click **Update** button. This button updates the plots on the right. 
 
 If you click the colored squares on the right of the checkbox, you can change the color(cluster IDs) and merge different clusters.
-
-![](./img/Screenshot5.png)
 
 ### 5: Save CS clusters
 
