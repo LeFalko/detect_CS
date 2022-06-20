@@ -187,18 +187,17 @@ After opening the GUI again, navigate to the "Detect CS" tab at the top. For det
 This is the detection tab of the GUI when re-entering:
 ![](./img/Screenshot4.png)
 
-<a name="data-format2"></a>
-### 0: Data format
+### <a name="data-format2">0: Data format</a>
 
 A file to be uploaded is similar to [STEP 1](#data-format) and should contain the following variables in .mat format.
 - High band-passed action potential: 1 x time
 - low band-passed LFP: 1 x time    
 - SS train (optional): 1 x time 
     
-    1 when SS fires, 0 otherwise. This is not used in the detection process, but useful later for [post-processing](#post-processing).
-    **The sampling rate of SS train can be different from the other two variables** (default is 1000 Hz).  
+    1 at the onsets of SS, 0 otherwise. This is not used in the detection process, but useful later for [post-processing](#post-processing).
+    **The sampling rate of SS train can be different from the other two variables** (default is 1000 Hz). SS train is not available, leave the variable name empty.  
 
-### 1: Set sampling rate and variable names
+### <a name="set-parameters2">1: Set sampling rate and variable names</a>
 
 Just like in [STEP 1](#set-parameters), click **Set parameters** button to set the sampling rate and variable names to be loaded. 
 
@@ -212,6 +211,16 @@ In the *Single file* section, click **Upload a PC recording** button to upload y
 ### 2: Upload weights
 
 To upload weights that you have downloaded from [Google Colab](#download-weights), click **Upload your downloaded weights from Colab** button.
+
+### <a name="detect-cs">3: Detect CSs</a>
+
+After uploading your recording and weights, click **Detct CS** button to start detecting CSs. This process can take a while depending on the length of the recording and the computational power of your computer.
+
+When CSs are detected, it will show the number of detected CSs and yon can save the output file. The file contains the following variables:
+- CS_onset:  Times of CS start (1 x # of CSs)
+- CS_offset: Times of CS end (1 x # of CSs)
+- cluster_ID: Cluster ID for each CS (1 x # of CSs)
+- embedding: Two dimensional representation of CS feature space (# of CSs x 2)
 
 <a name="serial-process-mode"></a>
 ### ---Serial process mode---
@@ -228,19 +237,18 @@ In Serial process mode, it makes an output file per each recording file. Therefo
 
 Same as [Single file mode](#single-file-mode), click **Upload your downloaded weights from Colab** button to upload weights that you have downloaded from [Google Colab](#download-weights).
 
-    
-### 1: Uploading files  
+### 4: Set output and log file names
 
-After opening the GUI again, navigate to the "Detect CS" tab at the top. 
-Choose if you want to detect on one or multiple files. Press the upper two buttons to upload a recording on which the algorithm will detect and to upload the weights you just saved from the Colab sheet in your browser. If you chose to detect on multiple files, you will need to specify an output folder as well.
+After the processing, you'll find two types of files in the output folder: output files and a log file.
 
+- Output file name: *file name of the PC* + *_output.mat* by default
+- Log file name: *log.csv* by default.
 
+The log file is a .cvs format and consists of file name, number of detected CSs, number of clusters and the sizes of each cluster.
 
-### 2: Detecting CS
+### 5: Detect CSs
 
-By clicking the "Detect CS" button and pressing "ok" in the dialog the detection will start. The results of the algorithm will be saved in a file with the selected file name in the beginning and "output" in the end, so the name of the resulting file ist "yourfilename_output.mat.
-
-You can move to the post-processing tab after running the algortihm to see your result and save clusters.
+After uploading your recording and weights, click **Detct CS** button to start detecting CSs. Then it will check the files of your recordings if the format is correct and tells you how many files will be inspected. Check the files that did not match the format by cancelling it and if you are fine with it, click **Proceed** button. This process can take a while depending on the length and the number of the recordings and the computational power of your computer.
 
 <div style="text-align: right">
 
@@ -249,22 +257,54 @@ You can move to the post-processing tab after running the algortihm to see your 
 
 ## <a name="post-processing">STEP4: Post-processing</a>
 
-**1: Uploading files** 
 
-Again, you first need to upload some files. This time, the loaded files have to be your recording from the last tab and the corresponding output file, so you should upload your file "filename.mat" as the upper file and your file "filename_output.mat" as the lower file.
-The names are shown after selection, so you can check and reupload anytime.
+The final step is to check the quality of CSs detected by the algorithm. The detected CSs are grouped by several clusters and you can select to save or discard each cluster of CSs.
 
-**2: Plotting data**
+### 0: Data format
 
-press the "Setting for plot" button in the big plotting window to change parameters (like simple spike variable name or sampling rate) to your personally used values. These can be changed and adjusted after plotting. 
-Press "Plot data" to see the CS clusters the algorithm detected on your file.
-This is an example of how it should look after plotting your files:
+For the post-processing, you need two files:
+a [file of PC recording](#data-format2) and an [output file](#detect-cs) from [STEP3](#data-format2). If you just finished this step, the last files that you proceeded are automatically loaded here. Otherwise, you can also upload other files as you want.
+
+
+### 1: Set sampling rate and variable names
+
+Just like in [STEP 1](#set-parameters) and [STEP2](#set-parameters2), click **Set parameters** button to set the sampling rate and variable names to be loaded. 
+
+### 2: Upload files
+
+Click **Load a PC recording** and **Load output** button to load a [file of PC recording](#data-format2) and [output file](#detect-cs).
+
+### 3: plot data
+
+Once you have uploaded your files, you can plot the data by clicking **Plot data** button in the *Plotting* section. You should see 4 plots. 
+
+- CS (top left): High-passed action potential aligned to CS onset.
+- LFP (bottom left): LFP aligned to CS onset.
+- Feature space (top right): Dimensionally reduced feature space by UMAP. This was used to cluster CSs.
+- SS (bottom right): SS raster and mean firing rates aligned to CS onset. **If SS train variable is not available, this will not be plotted**.
+
+You can also change the following parameters for plotting by clicking **Setting for plot**. 
+- SS sampling rate: Sampling rate of the variable SS train.
+- Time range from CS & LFP: Time before and after CS onset in ms. 
+- Marker size for feature space: Size of markers (dots) for the feature space plot.
+- SS raster sorted by: You can sort the SS either by the order of 
+- Gaussian kernel size: Mean firing rates of SSs are computed after convolving it with a Gaussian kernel. You can change the size of the kernel.
+- Marker size for SS raster: Size of markers (dots) for the SS raster plot.
+- Time range for SS raster: Time before and after CS onset in ms for SS raster and mean firing rates.
+
+### 4: Select CS clusters
+
+After plotting, you can select which CS clusters to save, based on shapes of CS/LFP, distance between clusters in feature space and pause of SS firing after CS.
+
+First, click **Select CS cluster** button in the *Select clusters* section. Then you can see checkboxes, size of clusters and cluster ID with different colors. By default, all clusters will be saved. If some of the clusters are not CSs, uncheck the checkbox and click **Update** button. This button updates the plots on the right. 
+
+If you click the colored squares on the right of the checkbox, you can change the color(cluster IDs) and merge different clusters.
+
 ![](./img/Screenshot5.png)
 
-**3: Selecting clusters and saving**
+### 5: Save CS clusters
 
-In the select clusters box the individual clusters can be selected to plot individually and outliers or noisy data can be deselected to remove from the results. The "update" button replots only the selected clusters.
-Lastly, the "Save selected cluster data" lets you save the selected clusters as a matlab file. Additional information to any button can be found in tooltips by hovering the information button in every box.
+After updating the CS clusters by clicking **Update** button, you can save CS clusters that you have selected. The saved format is the same as the [output file](#detect-cs)
 
 <div style="text-align: right">
 
@@ -273,7 +313,13 @@ Lastly, the "Save selected cluster data" lets you save the selected clusters as 
 
 ## <a name="trouble-shooting">Trouble shooting</a>
 
-In case the app crashes, you can run from a command prompt (on Windows) and see what kind of error is prompted.
+In case this GUI crashes, there several things that you can check and try.
+
+First of all, check again the formats and variable names of your files. Unexpected formats may cause error.
+
+In order to see what kind of errors are returened, you can run from a command prompt (on Windows) or terminal (on Mac). 
+
+Also, if the data is too big, you can try deviding the recordings into small parts to reduce the data size. 
 
 <div style="text-align: right">
 
