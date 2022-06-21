@@ -1574,7 +1574,7 @@ Keyboard shortcuts:
 
     # FUNCTIONS THIRD TAB
     def align_spikes(self, spikes, alignment, l1=300, l2=300):
-        N = len(alignment)
+        N = alignment.size
         spikes_aligned = np.zeros([N, l1+l2+1]) * np.nan
         for i in range(N):
             if alignment[i] - l1 < 0:
@@ -1877,10 +1877,10 @@ Keyboard shortcuts:
             errorbox.setText("Variable [" + 'embedding' +"] not found.")
             errorbox.exec_()
         else:    
-            cs_onset = output['CS_onset'].squeeze()
-            cs_offset = output['CS_offset'].squeeze()
-            cluster_ID = output['cluster_ID'].squeeze()
-            embedding = output['embedding'].squeeze()
+            cs_onset = output['CS_onset'].flatten()
+            cs_offset = output['CS_offset'].flatten()
+            cluster_ID = output['cluster_ID'].flatten()
+            embedding = output['embedding']
             print('cs_onset shape, cluster_ID shape, embedding.shape: ',cs_onset.shape, cluster_ID.shape, embedding.shape)
             
             self.CS_onset = cs_onset
@@ -2020,7 +2020,7 @@ Keyboard shortcuts:
             errorbox.setWindowTitle("Error")
             errorbox.setText("LFP not found.")
             errorbox.exec_()
-        elif len(self.cluster_ID_save)==0:
+        elif self.cluster_ID_save.size==0:
             errorbox = QMessageBox()
             errorbox.setWindowTitle("Error")
             errorbox.setText("Detected CS not found.")
@@ -2094,7 +2094,7 @@ Keyboard shortcuts:
                         idx = np.in1d(iy, np.where(cluster_ID[cluster_ID!=0]==i)[0])
                         color = mplcolors.to_rgba_array(self.colors[(i-1)%len(self.colors)])
                         self.canvas2.SS.plot(t_ss[ix[idx]], iy[idx], '.', c=color*p+wht*(1-p), ms=self.ms2)
-                self.canvas2.SS.set_ylim((0, len(cluster_ID[cluster_ID!=0])))
+                self.canvas2.SS.set_ylim((0, cluster_ID[cluster_ID!=0].size))
                 
                 ss_conv = gaussian_filter1d(ss_aligned, self.sigma * self.sampling_rate_SS/1000, order=0)*1000
                 for i in np.unique(cluster_ID[cluster_ID!=0]):
