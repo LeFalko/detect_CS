@@ -2023,7 +2023,7 @@ Keyboard shortcuts:
         elif self.cluster_ID_save.size==0:
             errorbox = QMessageBox()
             errorbox.setWindowTitle("Error")
-            errorbox.setText("Detected CS not found.")
+            errorbox.setText("No detected CS was found.")
             errorbox.exec_()
         else:
             cluster_ID = self.cluster_ID_save
