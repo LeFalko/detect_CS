@@ -10,7 +10,7 @@ Easy Platform for Identification of CSs (**EPICS**) is based on the [algorithm](
     - [Mac]()
 - Download the [test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used in [Markanday et al 2020](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org).
 
-Please note: if you want to view and modify the codes, you can clone this repository. All codes are written in Python.
+Please note: For viewing and modifying the codes, clone this repository. All codes are written in Python.
 
 ## <a name="top">How to use EPICS</a>
 
