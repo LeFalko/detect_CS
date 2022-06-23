@@ -1,5 +1,8 @@
 # An interactive graphical user interface for detecting cerebellar complex spikes  
 
+## Detecting complex spikes is no more complex
+Simple Complex Spike Identifier (SiCSI) is based on the [algorithm](https://github.com/jobellet/detect_CS) developed to detect cerebellar complex spikes (CSs).
+
 - Find [our article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org) on journal of neurophysiology
 
 - Download our GUI here
@@ -7,6 +10,8 @@
 [for Mac]().
 
 If you want to see and modify the codes, you can clone this repository. The codes were all written in Python.
+
+[Test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used for the previous article are available.
 
 ## <a name="top">How to use the GUI</a>
 
