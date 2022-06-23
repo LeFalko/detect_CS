@@ -1,19 +1,18 @@
 # An interactive graphical user interface for detecting cerebellar complex spikes  
 
 ## Detecting complex spikes is no more complex
-Simple Complex Spike Identifier (SiCSI) is based on the [algorithm](https://github.com/jobellet/detect_CS) developed to detect cerebellar complex spikes (CSs).
+Easy Platform for Identification of CSs (**EPICS**) is based on the [algorithm](https://github.com/jobellet/detect_CS) developed to detect cerebellar complex spikes (CSs).
 
-- Find [our article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org) on journal of neurophysiology
+- For more details on our deep learning-based CS detection algorithm, see our previously published article ([Markanday et al. 2020: doi.org/10.1152/jn.00754.2019)](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org) 
 
-- Download our GUI here
-[for Windows]() and
-[for Mac]().
+- Download the installation packages for EPICS:
+    - [Windows]() 
+    - [Mac]()
+- Download the [test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used in [Markanday et al 2020](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org).
 
-If you want to see and modify the codes, you can clone this repository. The codes were all written in Python.
+Please note: if you want to view and modify the codes, you can clone this repository. All codes are written in Python.
 
-[Test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used for the previous article are available.
-
-## <a name="top">How to use the GUI</a>
+## <a name="top">How to use EPICS</a>
 
 ### [STEP 1: Labeling your data](#labeling)
 ### [STEP 2: Training the network](#training)
@@ -24,7 +23,9 @@ If you want to see and modify the codes, you can clone this repository. The code
 &nbsp;
 
 ## <a name="labeling">STEP1: Labeling your data</a>
-This is how the GUI should look when opening it for the first time:
+This is how the launching page of EPICS should look like:
+
+
 ![](./img/Screenshot1.png)
 
 <a name="data-format"></a>
@@ -61,8 +62,9 @@ sp.savemat(FileName,
 # HIGH, LFP, Labels are numpy arrays
 ```
 
-<a name="set-parameters"></a>
-### 1: Set parameters
+
+### <a name="set-parameters">1: Set parameters</a>
+
 
 The first thing to do when opening the GUI is setting your parameters. Click the ***Set parameters*** button in *Data input* section in the top left corner. You can set the following parameters.
 
