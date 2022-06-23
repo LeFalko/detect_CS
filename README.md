@@ -1,8 +1,8 @@
-# A complete graphical user interface for detecting cerebellar complex spikes  
+# An interactive graphical user interface for detecting cerebellar complex spikes  
 
-You can find our article on [journal of neurophysiology](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org)
+- Find [our article](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org) on journal of neurophysiology
 
-You can download our GUI here
+- Download our GUI here
 [for Windows]() and
 [for Mac]().
 
