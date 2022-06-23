@@ -10,7 +10,7 @@ Easy Platform for Identification of CSs (**EPICS**) is based on the [algorithm](
     - [Mac]()
 - Download the [test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used in [Markanday et al 2020](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org).
 
-Please note: For viewing and modifying the codes, clone this repository. All codes are written in Python.
+Please note: For viewing and modifying the codes, clone this repository. All codes are written in Python. To run EPICS, run *gui.py*.
 
 ## <a name="top">How to use EPICS</a>
 
@@ -32,10 +32,10 @@ This is how the launching page of EPICS should look like:
 
 ### 0: Data format
 
-A file to be uploaded should contain the following variables in .mat format.
+A file to be uploaded should contain the following variables in matlab file (.mat) format.
 - High band-passed action potential: 1 x time
-- low band-passed LFP: 1 x time    
-- CS labels (optional): 1 x time 
+- Low band-passed LFP: 1 x time    
+- CS labels (optional): 1 x time  
     
     1 during CS dischage, 0 otherwise. 
     
