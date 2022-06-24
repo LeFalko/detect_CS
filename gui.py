@@ -936,28 +936,6 @@ class Content(QWidget):
         else:
             print('No more next CSs')
                 
-    # def keyPressEvent(self, event):
-    #     if event.key() == Qt.Key_R:
-    #         self.zoom(self.zoom_ratio)
-    #     elif event.key() == Qt.Key_T:
-    #         print('T')
-    #         self.zoom(1/self.zoom_ratio)
-    #     elif event.key()==Qt.Key_F:
-    #         print('F')
-    #         self.scroll.setValue(self.scroll.value() + 1)
-    #     elif event.key()==Qt.Key_D:
-    #         self.scroll.setValue(self.scroll.value() - 1)
-    #     elif event.key() == Qt.Key_Q:
-    #         self.set_max_xlim()
-    #     elif event.key() == Qt.Key_W:
-    #         self.set_zoom_xlim(1.0)
-    #     elif event.key() == Qt.Key_E:
-    #         self.set_zoom_xlim(0.05)
-    #     elif event.key() == Qt.Key_C:
-    #         self.go_to_prev_CS()
-    #     elif event.key() == Qt.Key_V:
-    #         self.go_to_next_CS()
-
     # activates span selection
     def select_cs(self):
         self.span = SpanSelector(self.canvas.high_axes, self.onselect, 'horizontal', useblit=True,

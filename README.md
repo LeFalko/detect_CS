@@ -6,7 +6,7 @@ Easy Platform for Identification of CSs (**EPICS**) is based on the [algorithm](
 - For more details on our deep learning-based CS detection algorithm, see our previously published article ([Markanday et al. 2020: doi.org/10.1152/jn.00754.2019)](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org) 
 
 - Download the installation packages for EPICS:
-    - [Windows]() 
+    - [Windows](https://sandbox.zenodo.org/api/files/4f55383e-b5ee-4f7e-b993-5b31adeefc6c/CSdetector.exe?versionId=b19fe0e2-5fb8-4ba8-94f9-73a6f3ab4798) 
     - [Mac]()
 - Download the [test data](https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227) used in [Markanday et al 2020](https://journals.physiology.org/doi/full/10.1152/jn.00754.2019?rfr_dat=cr_pub++0pubmed&url_ver=Z39.88-2003&rfr_id=ori%3Arid%3Acrossref.org).
 
