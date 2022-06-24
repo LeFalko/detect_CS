@@ -76,7 +76,7 @@ class Frame(QMainWindow):
         self.width = 1600
         self.height = 1000
         self.setGeometry(self.left, self.top, self.width, self.height)
-        self.title = 'CS Detection GUI'
+        self.title = 'EPICS'
         self.setWindowTitle(self.title)
 
         qtRectangle = self.frameGeometry()
