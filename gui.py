@@ -2,10 +2,10 @@
 # from typing import List, Any
 
 from PyQt5.QtWidgets import (QApplication, QComboBox, QDesktopWidget, QDialog, QFileDialog, QSizePolicy, QFormLayout, QGridLayout, QGroupBox, QSpinBox, 
-                             QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QComboBox, QPushButton, QToolButton, QTabWidget,
-                             QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar, QStyle)
-from PyQt5.QtGui import QIcon, QDesktopServices, QPixmap, QColor, QImage
-from PyQt5.QtCore import QUrl, QSize, Qt, QRect
+                             QHBoxLayout, QVBoxLayout, QInputDialog, QLabel, QMainWindow, QMessageBox, QPushButton, QToolButton, QTabWidget,
+                             QTextEdit, QWidget, QListWidget, QCheckBox, QLineEdit, QScrollBar, QStyle, QShortcut)
+from PyQt5.QtGui import QIcon, QDesktopServices, QPixmap, QColor, QImage, QKeySequence
+from PyQt5.QtCore import QUrl, QSize, Qt, QRect, QEvent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
@@ -221,9 +221,20 @@ class Content(QWidget):
         self.tab_label_data.layout.setColumnStretch(0, 4)
         self.tab_label_data.layout.setRowStretch(0, 0)
         self.tab_label_data.layout.setRowStretch(1, 4)
-
         # self.tab_preprocessing.layout.setRowStretch(0, 4)
         self.tab_label_data.setLayout(self.tab_label_data.layout)
+        
+        # Keyboard shotcuts
+        self.shortcut_Q = QShortcut(QKeySequence('Q'), self, self.set_max_xlim)
+        self.shortcut_W = QShortcut(QKeySequence('W'), self, lambda: self.set_zoom_xlim(1.0))
+        self.shortcut_E = QShortcut(QKeySequence('E'), self, lambda: self.set_zoom_xlim(0.05))
+        self.shortcut_R = QShortcut(QKeySequence('R'), self, lambda: self.zoom(self.zoom_ratio))
+        self.shortcut_T = QShortcut(QKeySequence('T'), self, lambda: self.zoom(1/self.zoom_ratio))
+        self.shortcut_D = QShortcut(QKeySequence('D'), self, lambda: self.scroll.setValue(self.scroll.value() - 1))
+        self.shortcut_F = QShortcut(QKeySequence('F'), self, lambda: self.scroll.setValue(self.scroll.value() + 1))
+        self.shortcut_C = QShortcut(QKeySequence('C'), self, self.go_to_prev_CS)
+        self.shortcut_V = QShortcut(QKeySequence('V'), self, self.go_to_next_CS)
+        
 
         # Create second tab
         self.tab_detect.layout = QGridLayout(self)
@@ -925,25 +936,27 @@ class Content(QWidget):
         else:
             print('No more next CSs')
                 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_R:
-            self.zoom(self.zoom_ratio)
-        elif event.key() == Qt.Key_T:
-            self.zoom(1/self.zoom_ratio)
-        elif event.key()==Qt.Key_F:
-            self.scroll.setValue(self.scroll.value() + 1)
-        elif event.key()==Qt.Key_D:
-            self.scroll.setValue(self.scroll.value() - 1)
-        elif event.key() == Qt.Key_Q:
-            self.set_max_xlim()
-        elif event.key() == Qt.Key_W:
-            self.set_zoom_xlim(1.0)
-        elif event.key() == Qt.Key_E:
-            self.set_zoom_xlim(0.05)
-        elif event.key() == Qt.Key_C:
-            self.go_to_prev_CS()
-        elif event.key() == Qt.Key_V:
-            self.go_to_next_CS()
+    # def keyPressEvent(self, event):
+    #     if event.key() == Qt.Key_R:
+    #         self.zoom(self.zoom_ratio)
+    #     elif event.key() == Qt.Key_T:
+    #         print('T')
+    #         self.zoom(1/self.zoom_ratio)
+    #     elif event.key()==Qt.Key_F:
+    #         print('F')
+    #         self.scroll.setValue(self.scroll.value() + 1)
+    #     elif event.key()==Qt.Key_D:
+    #         self.scroll.setValue(self.scroll.value() - 1)
+    #     elif event.key() == Qt.Key_Q:
+    #         self.set_max_xlim()
+    #     elif event.key() == Qt.Key_W:
+    #         self.set_zoom_xlim(1.0)
+    #     elif event.key() == Qt.Key_E:
+    #         self.set_zoom_xlim(0.05)
+    #     elif event.key() == Qt.Key_C:
+    #         self.go_to_prev_CS()
+    #     elif event.key() == Qt.Key_V:
+    #         self.go_to_next_CS()
 
     # activates span selection
     def select_cs(self):
