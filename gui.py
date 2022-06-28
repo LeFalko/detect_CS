@@ -257,7 +257,8 @@ class Content(QWidget):
         # Groupboxes
         # self.select_show_data_box = QGroupBox("Select clusters to show")
         self.load_files_for_plot_box = QGroupBox("Load files for plot")
-        self.select_show_data_box = QWidget()
+        # self.select_show_data_box = QWidget()
+        self.select_show_data_box = QGroupBox("Select clusters")
         self.cluster_plotting_box = QGroupBox("Plotting")
 
         # Add Groupboxes to third tab
@@ -1676,16 +1677,11 @@ Keyboard shortcuts:
         saving_button = QPushButton('Save selected cluster data')
         saving_button.clicked.connect(self.save_selected_cluster)
 
-        select_cluster_box = QGroupBox("Select clusters")
         select_cluster_box_layout = QVBoxLayout()
         select_cluster_box_layout.addWidget(select_widget)
         select_cluster_box_layout.addWidget(saving_button)
 
-        select_cluster_box.setLayout(select_cluster_box_layout)
-        
-        show_data_layout.addWidget(select_cluster_box)
-
-        self.select_show_data_box.setLayout(show_data_layout)
+        self.select_show_data_box.setLayout(select_cluster_box_layout)
         # self.select_show_data_box.setStyleSheet('border: 1px solid red;')
         
     def open_setting_box3(self):
@@ -1883,7 +1879,7 @@ Keyboard shortcuts:
             ext = fileName.split('.')[-1]
             self.outputName = fileName.split('.')[-2].split('/')[-1] + '.' + ext
             self.load_output_label.setText(self.outputName)
-        4
+        
     def generate_cluster_list(self):
         self.is_cluster_selected = []
         self.combobox = []
