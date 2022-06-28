@@ -628,7 +628,7 @@ class Content(QWidget):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload data", "",
-                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+                                                  "MATLAB Files (*.mat)", options=options)
         if fileName:
             self.upload_data(fileName)
 
@@ -1087,14 +1087,14 @@ Keyboard shortcuts:
         detect_upload_weights_button1.setFixedWidth(width)
         
         self.detect_upload_weights_label1 = QLabel()
-        self.detect_upload_weights_label1.setText(self.outputName)
+        self.detect_upload_weights_label1.setText("No weights" if self.weights == [] else self.weights)
         
         detect_upload_weights_button2 = QPushButton("Upload your downloaded weights from Colab")
         detect_upload_weights_button2.clicked.connect(self.upload_weights)
         detect_upload_weights_button2.setFixedWidth(width)
         
         self.detect_upload_weights_label2 = QLabel()
-        self.detect_upload_weights_label2.setText(self.outputName)
+        self.detect_upload_weights_label2.setText("No weights" if self.weights == [] else self.weights)
 
         detecting_button1 = QPushButton('Detect CS')
         detecting_button1.clicked.connect(self.detect_CS_starter)
@@ -1223,7 +1223,7 @@ Keyboard shortcuts:
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload files for CS detection", "",
-                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+                                                  "MATLAB Files (*.mat)", options=options)
         print(fileName)
         
         self.load_detection_data(fileName)
@@ -1841,7 +1841,7 @@ Keyboard shortcuts:
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self, "Upload data", "",
-                                                  "All Files (*);;MATLAB Files (*.mat)", options=options)
+                                                  "MATLAB Files (*.mat)", options=options)
         if fileName:
             self.upload_output(fileName)
             
