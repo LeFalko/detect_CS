@@ -128,7 +128,7 @@ https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purk
 
 All codes are written in Python. Please clone the Github repository for viewing and modifying the codes. To run EPICS, run the file ***gui.py***. This is what the launching page of EPICS should look like:
 
-![](https://i.imgur.com/0wDRf7l.png)
+![](./img/tab1_main.PNG)
 
 [<p align="right">back to top</p>](#top)
 
@@ -144,7 +144,7 @@ Before getting started with EPICS it is important to make sure that your input d
 Although not necessary for labeling the data but if you have already labeled CSs elsewhere, you can also use them. In that case, 
 * CS Labels: 1 x time (with values 1 during CS discharge, 0 otherwise)
 
-![](https://i.imgur.com/1C0mIaX.png)
+![](./img/example_variables.png)
 
 
 All variables must be in Matlab file (.mat) format. 
@@ -179,7 +179,7 @@ The first thing to do when getting started with EPICS is to set parameters. Clic
 In case, if you have already labeled the CS data elsewhere and want to view, modify or add more CSs to it in EPICS, then this would be the variable name under which CS labels are stored in your input data. After modification, the new CS labels will be stored with the same variable name      
 * **Important Note:** The algorithm's performance relies on both LFP and AP signals. We have not tested and therefore do not recommend using only AP as the input. However, in case your LFP signal is missing, and you still want to give EPICS a try, you can set the LFP variable name the same as that for AP (for example, set "HIGH" as the variable name for both AP and LFP variables).
 
-![](https://i.imgur.com/lGa4Pug.png)
+![](./img/tab1_setting1.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -191,7 +191,7 @@ Select a file and press ***open*** to load it. The selected file should be plott
 
 Alternatively, you can also load more files. In this case, all files will be added to the list in the ***loaded files*** section on the left, where you can select single files to plot or remove.
 After uploading and plotting, the GUI should look like this:
-![](https://i.imgur.com/DT4DChN.png)
+![](./img/tab1_upload_files.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -219,7 +219,7 @@ If you want to check CSs that you have already selected, use the following funct
 * **Previous CS (C):** Jump to the previous CS
 * **Next CS (V):** Jump to the next CS
 This is an example of a selected CS:
-![](https://i.imgur.com/BSvte6n.png)
+![](./img/tab1_selectingCS.png)
 
 After labeling the first recording, select another file in your list and press "plot" to plot the new recording in the GUI, and proceed with labeling.
 
@@ -243,7 +243,7 @@ After labeling all the uploaded files, press the **'Save'** button in the Save t
 
 After saving the training data, click the **'TRAIN ALGORITHM'** button in the After labeling section, this will take you to a Google Colab notebook to train the network. Google Colab is a free cloud computing service for Jupyter notebook offered by Google. Here you can train your network fast and easily, thanks to Google's powerful computational resources.
 You can run each cell by clicking the triangle on the left or *Shift+Enter*. <br/>
-![](https://i.imgur.com/fgn2q3b.png)
+![](./img/colab_step0.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -251,14 +251,14 @@ You can run each cell by clicking the triangle on the left or *Shift+Enter*. <br
 
 First, in order to run this notebook, you need to give Google permission to access your Google Drive.
 
-![](https://i.imgur.com/9ZrCuBj.png)
+![](./img/colab_step1.png)
 
 [<p align="right">back to top</p>](#top)
 
 #### 3.2.2 <a name="install-the-toolboxes-on-your-google-drive">Install the toolboxes on your google drive</a>
 
 This cell installs the necessary tools on your Google Drive. This process can take a few minutes.
-![](https://i.imgur.com/1uStjxH.png)
+![](./img/colab_step2.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -266,7 +266,7 @@ This cell installs the necessary tools on your Google Drive. This process can ta
 By running this cell, you can upload the training data that you have saved in STEP 1.
 If you receive an error *"MessageError: TypeError: google.colab.files is undefined"*, check your browser's setting and allow third-party cookies.
 
-![](https://i.imgur.com/O603Zsk.png)
+![](./img/colab_step3.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -283,7 +283,7 @@ If the sampling rate is very different from 25kHz and the training does not work
 
 3. **The number of validation samples:** A criterion used to stop iteration earlier. If you have a small training set and the training shows an error, you should consider reducing this number (the default is 10). 
 
-![](https://i.imgur.com/qxRBvi7.png)
+![](./img/colab_step4.png)
 For more details please see Markanday et al 2020. <br/>
 
 [<p align="right">back to top</p>](#top)
@@ -292,7 +292,7 @@ For more details please see Markanday et al 2020. <br/>
 
 By running this cell, you can train your network. It can take a while depending on the size of your data.
 
-![](https://i.imgur.com/SE5IJ9p.png)
+![](./img/colab_step5.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -300,7 +300,7 @@ By running this cell, you can train your network. It can take a while depending 
 
 After training your network, you can run this cell to download the weights named “my_weights”. You can return to the GUI after completing this last step.
 
-![](https://i.imgur.com/qqqEc86.png)
+![](./img/colab_step6.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -308,7 +308,7 @@ After training your network, you can run this cell to download the weights named
 
 Open EPICS again and click on the **"Detect CS"** tab at the top. This is what the detection tab looks like when re-entering:
 
-![](https://i.imgur.com/vPLNjCj.png)
+![](./img/tab2_main.png)
 
 
 There are two ways of detecting CSs, *single file mode detection*, and *serial process mode detection*. We will discuss each of them later in section 3.3.3 and section 3.3.4, respectively. 
@@ -331,7 +331,7 @@ SSs are not used in the CS detection process but are useful in verifying the qua
 #### 3.3.2 <a name="set-parameters2">Set parameters</a>
 Set the parameters (sampling rates and variable names) as described in section 2.4. 
 
-![](https://i.imgur.com/hK8JTze.png)
+![](./img/tab2_setting1.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -356,7 +356,7 @@ When CSs are detected, it will show the number of detected CSs and the output fi
 **cluster_ID:** Cluster ID for each CS (1 x # of CSs)
 **embedding:** Two-dimensional representation of CS feature space (number of CSs x 2)
 
-![](https://i.imgur.com/qo6w8X7.png)
+![](./img/tab2_singlefile.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -389,7 +389,7 @@ After CSs have been detected in all the files, you'll find two types of files in
 After uploading the PC recording and weights, click the **'Detect CS'** button to start detecting CSs. The program will check the format of all PC recordings and will tell how many files have been inspected. 
 Check the files that did not match the format requirements by canceling them. Once you are satisfied, click the **'Proceed'** button. This process can take a while depending on the length and the number of PC recording files and the computational power of your computer.
 
-![](https://i.imgur.com/ZrvLczG.png)
+![](./img/tab2_serialprocessing.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -397,7 +397,7 @@ Check the files that did not match the format requirements by canceling them. On
 The final step is to check the quality of CSs detected by the algorithm. The detected CSs are grouped into several clusters and you can select to save or discard individual clusters of CSs.
 After successful detection of CSs, click on the third tab, 'Post-processing', in EPICS. This is what you should see:
 
-![](https://i.imgur.com/uwfvicM.png)
+![](./img/tab3_main.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -415,7 +415,7 @@ The last files that were used to detect CSs in section 3.3 are automatically loa
 
 Set parameters and variables as described previously in section 2.4.
 
-![](https://i.imgur.com/O8s84BP.png)
+![](./img/tab3_setting1.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -423,7 +423,7 @@ Set parameters and variables as described previously in section 2.4.
 
 Click the **'Load a PC recording'** and **'Load output'** buttons to load a file of PC recording and output file, respectively.
 
-![](https://i.imgur.com/4MC4HKH.png)
+![](./img/tab3_upload_files.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -435,7 +435,7 @@ Once you have uploaded your files, you can plot the data by clicking the **'Plot
 * **Feature space (top right):** Dimensionally reduced feature space by UMAP. This was used to cluster CSs.
 * **SS (bottom right):** SS raster and mean firing rates aligned to CS onset. If the SS train variable is not available, this will not be plotted.
 
-![](https://i.imgur.com/5c3gZIn.png)
+![](./img/tab3_plot.png)
 
 
 You can also change the following parameters for plotting by clicking the **'Setting for plot'** button.
@@ -448,7 +448,7 @@ You can also change the following parameters for plotting by clicking the **'Set
 * **Gaussian kernel size:** Mean firing rates of SSs are computed after convolving them with a Gaussian kernel. You can change the size of the kernel.
 * **Marker size for SS raster:** Size of markers (dots) for the SS raster plot.
 * **The time range for SS raster:** Time before and after CS onset in ms for SS raster and mean firing rates.
-![](https://i.imgur.com/2SPq89C.png)
+![](./img/tab3_setting2.png)
 
 [<p align="right">back to top</p>](#top)
 
@@ -465,7 +465,7 @@ If you feel that two different clusters look very similar, you can also merge th
 #### 3.4.6 <a name="save-cs-clusters">Save CS clusters</a>
 
 After updating the CS clusters by clicking the **'Update'** button, you can save the CS clusters that you have selected by clicking the **'Save selected cluster data'**. The saved format is the same as the output file.
-![](https://i.imgur.com/1CAXi8n.png)
+![](./img/tab3_select_clusters.png)
 
 [<p align="right">back to top</p>](#top)
 
