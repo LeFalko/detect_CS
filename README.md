@@ -18,7 +18,7 @@
 
 ## 2. [Getting started](#getting-started)
 
-### 2.1. [Installation package](#installation-package)
+### 2.1. [Installation packages](#installation-packages)
 
 #### 2.2. [Initialization](#initialization)
 
@@ -93,7 +93,7 @@
 
 ## 4.  [Troubleshooting](#troubleshooting) 
 
-## <a name="introduction"> **1. Introduction: EPICS** </a>
+## <a name="introduction"> 1. Introduction: EPICS </a>
 
 We introduce an Easy Platform for Identification of Complex Spikes (EPICS) - a GUI tool that integrates all steps in detecting Complex Spikes (CSs). In EPICS, you can prepare the training dataset by manually labeling CSs of individual Purkinje cells (PCs), train the deep learning algorithm for detecting CSs, detect CSs, and finally, verify the detected CSs in a post-processing step. 
 
@@ -103,9 +103,10 @@ In this document, we describe all the necessary steps and features of EPICS in a
 
 [<p align="right">back to top</p>](#top)
 
-## <a name="setup"> **2. Getting Started** </a>
+##  2. <a name="getting-started">Getting Started</a>
 
-### **2.1 Installation Packages**
+### 2.1 <a name="installation-packages">Installation Packages</a>
+
 EPICS can be installed locally on both Widows and Mac-based operating systems. To download the installation packages follow the links below:
 
 * WINDOWS 
@@ -121,18 +122,17 @@ After downloading and unzipping the folders on your local drive, you can install
 The PC test dataset used in Markanday et al 2020 can be downloaded from:
 https://figshare.com/articles/dataset/Extracellular_recording_of_cerebellar_Purkinje_cells_and_labels_of_complex_spikes_from_expert/11872227
 
-### **2.2 Initialization**
+### 2.2 <a name=initialization>Initialization</a>
 
 All codes are written in Python. Please clone the Github repository for viewing and modifying the codes. To run EPICS, run the file ***gui.py***. This is what the launching page of EPICS should look like:
 
 ![](https://i.imgur.com/0wDRf7l.png)
-<br/>
 
- [back to top](#top)
+[<p align="right">back to top</p>](#top)
 
-## <a name="tutorial">**3. How to use EPICS**</a>
+## 3. <a name="how-to-use-epics">How to use EPICS</a>
 
-### <a name="step1">**3.1  STEP 1: Labeling your data**</a>
+### 3.1  <a name="step1">STEP 1: Labeling your data</a>
 
 #### **3.1.1 Data format**
 Before getting started with EPICS it is important to make sure that your input data is stored in the correct format. A file (i.e., PC recording) to be uploaded must contain the following variables: 
