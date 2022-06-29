@@ -11,20 +11,20 @@
 
 
 
-
+<a name=top></a>
 # Contents
  
-## 1. [**Introduction: EPICS**](#introduction)
+## 1. [Introduction: EPICS](#introduction)
 
-## 2. [**Getting started**](#getting-started)
+## 2. [Getting started](#getting-started)
 
 ### 2.1. [Installation package](#installation-package)
 
 #### 2.2. [Initialization](#initialization)
 
-## 3. [**How to use EPICS**](#how-to-use-epics)
+## 3. [How to use EPICS](#how-to-use-epics)
 
-### 3.1. [**STEP 1: Labeling your data**](#step1)
+### 3.1. [STEP 1: Labeling your data](#step1)
 
 #### 3.1.1. [Data format](#data-format1)
 
@@ -32,37 +32,66 @@
 
 #### 3.1.3. [Upload files](#upload-files1)
 
-&nbsp; 3.1.4. Label CSs in PC recordings
-&nbsp; 3.1.5. Save CSs labels for each PC
-&nbsp; 3.1.6. Save the final training dataset
-[3.2. **STEP 2: Training the network**](#step2)
-&nbsp; 3.2.1. Allow access to google drive 
-&nbsp; 3.2.2. Install the toolboxes on your google drive
-&nbsp; 3.2.3. Upload training data
-&nbsp; 3.2.4. Advanced parameters setting
-&nbsp; 3.2.5. Train the network
-&nbsp; 3.2.6. Downloading weights
-[3.3. **STEP 3: Detecting complex spikes**](#step3)
-&nbsp; 3.3.1. Data format 
-&nbsp; 3.3.2. Set parameters
-&nbsp; 3.3.3. Single file mode detection
-&emsp; 3.3.3.1. Upload file 
-&emsp; 3.3.3.2. Upload weights
-&emsp; 3.3.3.3. Detect CS
-&nbsp; 3.3.4. Serial process mode detection
-&emsp; 3.3.4.1. Select a folder
-&emsp; 3.3.4.2. Select the target folder for saving the output
-&emsp; 3.3.4.3. Upload weights
-&emsp; 3.3.4.4. Set output and log file names
-&emsp; 3.3.4.5. Detect CSs
-[3.4. **STEP 4: Post-processing and verification**](#step4)
-&nbsp; 3.4.1. Data format
-&nbsp; 3.4.2. Set parameters
-&nbsp; 3.4.3. Upload files
-&nbsp; 3.4.4. Plot data
-&nbsp; 3.4.5. Select CS clusters
-&nbsp; 3.4.6. Save CS clusters
-[4.  **Troubleshooting**](#troubleshooting) 
+#### 3.1.4. [Label CSs in PC recordings](#label-css-in-pc-recordings)
+
+#### 3.1.5. [Save CSs labels for each PC](#save-css-labels-for-each-pc)
+
+#### 3.1.6. [Save the final training dataset](#save-the-final-training-dataset)
+
+### 3.2. [STEP 2: Training the network](#step2)
+#### 3.2.1. [Allow access to google drive](#allow-access-to-google-drive)
+
+#### 3.2.2. [Install the toolboxes on your google drive](#install-the-toolboxes-on-your-google-drive)
+
+#### 3.2.3. [Upload training data](#upload-training-data)
+
+#### 3.2.4. [Advanced parameters setting](#advanced-parameters-setting)
+
+#### 3.2.5. [Train the network](#train-the-network)
+
+#### 3.2.6. [Downloading weights](#downloading-weights)
+
+### 3.3. [STEP 3: Detecting complex spikes](#step3)
+
+#### 3.3.1. [Data format](#data-format2) 
+
+#### 3.3.2. [Set parameters](#set-parameters2)
+
+#### 3.3.3. [Single file mode detection](#single-file-mode-detection)
+
+##### 3.3.3.1. [Upload file](#upload-files2)
+
+##### 3.3.3.2. [Upload weights](#upload-weights1)
+
+##### 3.3.3.3. [Detect CSs](#detect-cs1)
+
+#### 3.3.4. [Serial process mode detection](#serial-process-mode-detection)
+
+##### 3.3.4.1. [Select a folder](#select-a-folder)
+
+##### 3.3.4.2. [Select the target folder for saving the output](#select-the-target-folder-for-saving-the-output)
+
+##### 3.3.4.3. [Upload weights](#upload-weights2)
+
+##### 3.3.4.4. [Set output and log file names](#set-output-and-log-file-names)
+
+##### 3.3.4.5. [Detect CSs](#detect-css)
+
+### 3.4. [STEP 4: Post-processing and verification](#step4)
+
+#### 3.4.1. [Data format](#data-format3)
+
+#### 3.4.2. [Set parameters](#set-parameters3)
+
+#### 3.4.3. [Upload files](#upload-files3)
+
+#### 3.4.4. [Plot data](#plot-data)
+
+#### 3.4.5. [Select CS clusters](#select-cs-clusters)
+
+#### 3.4.6. [Save CS clusters](#save-cs-clusters)
+
+## 4.  [Troubleshooting](#troubleshooting) 
 
 ## <a name="intro"> **1. Introduction: EPICS** </a>
 
