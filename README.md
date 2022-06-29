@@ -1,7 +1,7 @@
 # <p align="center">Easy Platform for Identification of Complex Spikes (EPICS)<p>
 
 
-## User guide and manual
+## <p align="center">User guide and manual</p>
  
 
 
@@ -101,7 +101,8 @@ The Convolutional Neural Networks (CNN)—based deep learning algorithm for dete
 
 In this document, we describe all the necessary steps and features of EPICS in a step-by-step manner. 
 
-[back to top](#top)
+[<p align="right">back to top</p>](#top)
+
 ## <a name="setup"> **2. Getting Started** </a>
 
 ### **2.1 Installation Packages**
