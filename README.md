@@ -1,7 +1,7 @@
-# <center> <a name="top"> **Easy Platform for Identification of Complex Spikes (EPICS)** </a> </center>
+# <p align="center">Easy Platform for Identification of Complex Spikes (EPICS)<p>
 
 
-## <center> User guide and manual </center>
+## User guide and manual
  
 
 
