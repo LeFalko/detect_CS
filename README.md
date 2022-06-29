@@ -93,7 +93,7 @@
 
 ## 4.  [Troubleshooting](#troubleshooting) 
 
-## <a name="intro"> **1. Introduction: EPICS** </a>
+## <a name="introduction"> **1. Introduction: EPICS** </a>
 
 We introduce an Easy Platform for Identification of Complex Spikes (EPICS) - a GUI tool that integrates all steps in detecting Complex Spikes (CSs). In EPICS, you can prepare the training dataset by manually labeling CSs of individual Purkinje cells (PCs), train the deep learning algorithm for detecting CSs, detect CSs, and finally, verify the detected CSs in a post-processing step. 
 
@@ -101,7 +101,7 @@ The Convolutional Neural Networks (CNN)—based deep learning algorithm for dete
 
 In this document, we describe all the necessary steps and features of EPICS in a step-by-step manner. 
 
- [back to top](#top)
+[back to top](#top)
 ## <a name="setup"> **2. Getting Started** </a>
 
 ### **2.1 Installation Packages**
