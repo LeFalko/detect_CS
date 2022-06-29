@@ -169,7 +169,8 @@ An example to save variables in Python:
 ```    
 [<p align="right">back to top</p>](#top)
 
-#### **3.1.2 Set Parameters**
+#### 3.1.2 <a name="set-parameters1">Set Parameters</a>
+
 The first thing to do when getting started with EPICS is to set parameters. Click the ***Set parameters*** button in the ***Data input*** section in the top left corner. Here, you can set the following parameters (see image below).
 * **Sampling rate [Hz]:** This is the sampling rate of your PC recordings. It should be the same for action potentials (APs) and LFPs.
 * **Action-potential (AP) variable name:** The name under which AP signal is stored in your input data.
@@ -269,7 +270,7 @@ If you receive an error *"MessageError: TypeError: google.colab.files is undefin
 
 [<p align="right">back to top</p>](#top)
 
-#### 3.2.4 <a name="advanced parameters setting">Advanced parameters setting</a>
+#### 3.2.4 <a name="advanced-parameters-setting">Advanced parameters setting</a>
 You can adjust the parameters listed below only when the training does not yield good results in detecting CSs. Otherwise, use default values. But you still need to run this section for the training to proceed.
 1. **Max number of iterations:** max_iter: (default is 3000)
 
