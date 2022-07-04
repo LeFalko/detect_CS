@@ -110,10 +110,10 @@ In this document, we describe all the necessary steps and features of EPICS in a
 EPICS can be installed locally on both Widows and Mac-based operating systems. To download the installation packages follow the links below:
 
 * WINDOWS 
-(https://zenodo.org/record/6770751/files/EPICS.exe)
+(https://zenodo.org/record/6794284/files/EPICS.exe)
 
 * MAC 
-(https://zenodo.org/record/6771527/files/EPICS.dmg)
+(https://zenodo.org/record/6794118/files/EPICS.dmg)
 
 After downloading and unzipping the folders on your local drive, you can install EPICS by executing the EPICS.exe file for Windows and EPICS.dmg for Mac-based operating systems.
 
