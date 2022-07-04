@@ -539,6 +539,7 @@ class Content(QWidget):
             self.LFP.pop(idx)
             self.HIGH.pop(idx)
             self.Labels.pop(idx)
+            self.Intervals_inspected.pop(idx)
             self.cs_spans_all.pop(idx)
             
             self.canvas.high_axes.cla()
@@ -628,10 +629,12 @@ class Content(QWidget):
     def openFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "Upload data", "",
+        fileNames, _ = QFileDialog.getOpenFileNames(self, "Upload data", "",
                                                   "MATLAB Files (*.mat)", options=options)
-        if fileName:
-            self.upload_data(fileName)
+        print('filenames',fileNames)
+        if fileNames:
+            for fileName in fileNames:
+                self.upload_data(fileName)
 
     def upload_data(self, fileName):
         mat = sp.loadmat(fileName)
@@ -655,9 +658,12 @@ class Content(QWidget):
                 print(self.Label_varname)                 
                 self.labels_to_spans()
             else:
+                self.label = np.zeros_like(self.upload_LFP)
                 print('CS labels not available')
                 self.cs_spans = np.array([[]])
-            self.interval_inspected = np.zeros_like(self.upload_LFP)
+                
+            # self.interval_inspected = np.zeros_like(self.upload_LFP)
+            self.interval_inspected = create_random_intervals(self.sampling_rate, self.upload_LFP, self.label)
             self.cs_span = np.zeros(2)
             
             self.cs_patch = []
@@ -668,7 +674,7 @@ class Content(QWidget):
             self.Labels.append(self.label)
             self.cs_spans_all.append(self.cs_spans)
             self.Intervals_inspected.append(self.interval_inspected)
-            self.plot_data()
+            # self.plot_data()
             self.create_loaded_files_box()
             
     def saveCurrentFile(self):
@@ -705,13 +711,14 @@ class Content(QWidget):
             for i in range(len(self.ID)):
                 print(i)
                 print(self.LFP[i])
-                print(self.Intervals_inspected[i])
+                print(len(self.Intervals_inspected))
                 lfp_norm = norm_LFP(self.LFP[i],self.sampling_rate)
                 high_norm = norm_high_pass(self.HIGH[i])
                 compLFP,compHIGH,compLabels = concatenate_segments(lfp_norm, high_norm, self.Intervals_inspected[i], self.Labels[i])
                 bigLFP = np.concatenate((bigLFP,compLFP))
                 bigHIGH = np.concatenate((bigHIGH,compHIGH))
                 bigLabels = np.concatenate((bigLabels,compLabels))
+                print('bigLFP',compLFP)
             # sp.savemat(fileName, {'ID': np.array(self.ID, dtype=object),
             #                       'LFP': self.LFP,
             #                       'HIGH': self.HIGH,
