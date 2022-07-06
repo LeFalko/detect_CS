@@ -1552,6 +1552,10 @@ Keyboard shortcuts:
         print(logfile)
         
         logfile.to_csv(self.output_folder + '/' + self.logName + '.csv', index=False)
+        
+        message_box = QMessageBox()
+        message_box.setText('CSs have been detected in {} files'.format(len(files_new)))
+        message_box.exec()
              
     # explanation texts for the second tab
     def info_detect_CS(self):
